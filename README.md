@@ -73,8 +73,17 @@ $PY figures/plot_selected_relations.py            # Fig 3
 
 ### 2. Full reproduction from scratch (SLURM + external data)
 
-Requires the external data described below. Broad pipeline:
+Requires the external data described below. This full chain (extract → align →
+train → per-relation ULAS) has been verified end-to-end on a small PTB subset;
+see [Natural-sentence embeddings](#natural-sentence-embeddings-our-variation).
+Broad pipeline:
 
+0. **Pre-download models (once, on a node with internet).** Compute nodes have
+   no outbound internet, so cache the HF models the extraction scripts need:
+   ```bash
+   HF_HOME=/gpfs/scratch/<user>/hf-cache python scripts/predownload_models.py
+   ```
+   Set the same `HF_HOME` in `paths.sh` (jobs run with `HF_HUB_OFFLINE=1`).
 1. **Prep PTB.** Convert PTB-WSJ constituency trees to Stanford Dependencies
    (`scripts/convert_splits_to_depparse.sh`) and to whitespace-tokenized text
    (`scripts/convert_conll_to_raw.py`).
@@ -116,9 +125,25 @@ Machine-local paths live in [`paths.yaml`](paths.yaml) (read by Python) and
 - `data.corpus` — PTB-WSJ CoNLL-X (`ptb3-wsj-{train,dev,test}.conllx`).
 - `data.embeddings.*`, `data.models.*`, `data.alignment.*` — external
   embedding / model / alignment directories (not shipped; large).
+- `HF_HOME` (in `paths.sh`) — HuggingFace cache the offline jobs read; point it
+  at a directory you own and populate it with `scripts/predownload_models.py`.
 
 The saved result configs under `results-hface/` and `results/` retain the
 original absolute paths from the run that produced them, kept as provenance.
+
+## Natural-sentence embeddings (our variation)
+
+Unlike Hewitt & Manning, who feed raw PTB tokens to BERT, we embed a
+**natural-language rendering** of each sentence:
+`scripts/convert_raw_to_bert_natural_sentences.py` maps PTB escapes to surface
+forms (`-LRB-`→`(`, `` `` ``/`''`→`"`) and restores natural spacing via
+`data.natural_sentence`, so representations reflect how BERT was actually
+pretrained. It records **26 checkpoints** per sentence (raw embedding, layer-00,
+then post-attention and post-block residual streams for each of 12 blocks) using
+`transformer_lens.HookedEncoder`. Subword vectors are pooled back to PTB tokens
+with `data.hface_alignment_deptb`, a two-step character-level Levenshtein
+alignment (subwords → natural string → PTB string), precomputed by
+`scripts/precompute_alignments.py`.
 
 ## External data (not included)
 
@@ -127,6 +152,10 @@ Too large to bundle; needed only for full reproduction (level 2):
 - **PTB-WSJ** dependency parses (CoNLL-X). Requires an unmodified PTB3 license.
 - **BERT-base** natural-sentence embeddings (26-layer HDF5).
 - **RoBERTa-Shuffle-N1** model + embeddings (Sinha et al., EMNLP 2021).
+- **HF model cache** for `bert-base-cased` / `roberta-base` — compute nodes are
+  offline, so run `scripts/predownload_models.py` first (level-2 step 0). Note
+  `transformer_lens` resolves `bert-base-cased` to its canonical id
+  `google-bert/bert-base-cased`; the script fetches both.
 
 ## Layout
 
