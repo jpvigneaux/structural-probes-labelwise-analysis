@@ -109,8 +109,12 @@ Broad pipeline:
 # Always use the explicit interpreter path (conda activate is unreliable on the cluster).
 PYTHON=/path/to/conda/envs/sp-env/bin/python
 
-# Key pins: transformers==4.38.2 (data.py breaks on v5), torch, scipy, plotly,
-# simple_slurm, omegaconf, pyyaml.  See requirements.txt.
+# Verified with transformers 4.57.6 (an older note claimed a 4.38.2 pin; the
+# environment used for the from-scratch reproduction runs 4.57.6). Also torch,
+# scipy, plotly, simple_slurm, omegaconf, pyyaml.  See requirements.txt.
+#
+# Tokenizers must be *fast* (character offsets are required by the unified
+# alignment). Name the tokenizer explicitly via model.hf_model_name.
 ```
 
 All non-trivial jobs run on SLURM (CPU: `--partition=short`; GPU:

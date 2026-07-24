@@ -36,7 +36,12 @@ parser = argparse.ArgumentParser(description=__doc__,
     formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument('--model-dir', required=True,
     help='Directory containing model.pt (and optionally encoder.json/vocab.bpe).')
-parser.add_argument('--input', required=True,
+parser.add_argument('--conllx', default=None,
+                    help='CoNLL-X file; sentences are de-PTBified with '
+                         'data.natural_sentence and stored WITH <s>/</s>, matching '
+                         'the unified alignment path (scripts/precompute_alignments_hf.py). '
+                         'Preferred over --input.')
+parser.add_argument('--input', required=False,
     help='Raw text file: one space-tokenised sentence per line.')
 parser.add_argument('--output', required=True,
     help='Output HDF5 path.')
@@ -145,7 +150,34 @@ print('Tokenizer loaded.')
 # ---------------------------------------------------------------------------
 # Extract and write embeddings
 # ---------------------------------------------------------------------------
-lines = Path(args.input).read_text().splitlines()
+if args.conllx:
+    import sys as _sys, os as _os
+    _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), '..', 'structural-probes'))
+    from data import natural_sentence as _natural
+
+    def _read_conllx(path):
+        sents, buf = [], []
+        for ln in open(path):
+            ln = ln.strip()
+            if ln.startswith('#'):
+                continue
+            if not ln:
+                if buf:
+                    sents.append(buf); buf = []
+            else:
+                buf.append(ln.split('\t')[1])
+        if buf:
+            sents.append(buf)
+        return sents
+
+    lines = [_natural(t) for t in _read_conllx(args.conllx)]
+    USE_SPECIALS = True
+    print(f'Read {len(lines)} sentences from {args.conllx} (natural form, with specials)')
+elif args.input:
+    lines = Path(args.input).read_text().splitlines()
+    USE_SPECIALS = False
+else:
+    parser.error('one of --conllx (preferred) or --input is required')
 total = len(lines)
 print(f'Processing {total} sentences → {args.output}')
 
@@ -157,8 +189,12 @@ with h5py.File(args.output, 'w') as fout:
         if not line:
             continue
 
-        # Tokenize WITHOUT special tokens (matches existing RoBERTa HDF5 convention)
+        # With --conllx we store <s> ... </s> so that the pre-aligned path's
+        # features[1:-1] slice lines up with the alignment matrix rows.
+        # With --input we keep the older no-specials convention.
         tokenized = tokenizer.tokenize(line)
+        if USE_SPECIALS:
+            tokenized = [tokenizer.bos_token] + tokenized + [tokenizer.eos_token]
         if not tokenized:
             # Fallback: store a single zero vector
             dset = fout.create_dataset(str(index),

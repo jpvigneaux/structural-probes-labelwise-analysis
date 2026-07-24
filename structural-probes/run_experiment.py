@@ -59,7 +59,10 @@ def choose_dataset_class(args):
   """
   if args['model']['model_type'] in {'ELMo-disk', 'ELMo-random-projection', 'ELMo-decay'}:
     dataset_class = data.ELMoDataset
-  elif args['model']['model_type'] == 'BERT-disk':
+  elif args['model']['model_type'] in {'BERT-disk', 'hf-disk'}:
+    # 'hf-disk' is any HuggingFace encoder aligned by scripts/precompute_alignments_hf.py.
+    # BERTDataset's pre-aligned branch is model-agnostic: it only loads the matrix
+    # and computes align.T @ features[1:-1].
     dataset_class = data.BERTDataset
   elif args['model']['model_type'] == 'gpt-2':
     dataset_class = data.GPTDataset
@@ -107,7 +110,7 @@ def choose_model_class(args):
   """
   if args['model']['model_type'] == 'ELMo-disk':
     return model.DiskModel
-  elif args['model']['model_type'] == 'BERT-disk':
+  elif args['model']['model_type'] in {'BERT-disk', 'hf-disk'}:
     return model.DiskModel
   elif args['model']['model_type'] == 'ELMo-random-projection':
     return model.ProjectionModel
