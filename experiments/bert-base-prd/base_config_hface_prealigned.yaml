@@ -26,6 +26,7 @@ dataset:
 model:
   hidden_dim: 768
   model_type: BERT-disk
+  hf_model_name: bert-base-cased  # tokenizer that produced the embeddings (no hidden_dim guessing)
   use_disk: True
   model_layer: 3  # overridden per-layer by run_all_hface_prealigned.sh
   alignment: pre-aligned
