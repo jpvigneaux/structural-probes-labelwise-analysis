@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# MacOS
+.DS_Store
+
+# SLURM logs
+slurm-logs/
+*.out
+
+# Large / external data (kept outside the repo)
+*.hdf5
