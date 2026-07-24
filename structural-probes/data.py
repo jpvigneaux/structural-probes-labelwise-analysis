@@ -239,7 +239,7 @@ class SimpleDataset:
     test_embeddings_path = os.path.join(self.args['dataset']['embeddings']['root'],
         self.args['dataset']['embeddings']['test_path'])
 
-    if self.args['model']['alignment'] == 'pre-aligned':
+    if self.args['model'].get('alignment') == 'pre-aligned':
       align_root = self.args['model']['alignment_root']
       train_align_path = os.path.join(align_root, self.args['model']['alignment_train_path'])
       dev_align_path   = os.path.join(align_root, self.args['model']['alignment_dev_path'])
@@ -556,7 +556,7 @@ class BERTDataset(SubwordDataset):
           to downloading of prespecifed tokenizer problem. Not recoverable;
           exits immediately.
     '''
-    alignment_method = self.args['model']['alignment']
+    alignment_method = self.args['model'].get('alignment')
 
     if alignment_method == 'pre-aligned':
       # Alignment was pre-computed by scripts/precompute_alignments.py.
