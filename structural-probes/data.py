@@ -419,7 +419,7 @@ class SimpleDataset:
     """
     return DataLoader(self.test_dataset, batch_size=self.batch_size, collate_fn=self.custom_pad, shuffle=False)
 
-  def optionally_add_embeddings(self, observations, pretrained_embeddings_path):
+  def optionally_add_embeddings(self, observations, pretrained_embeddings_path, alignment_path=None):
     """Does not add embeddings; see subclasses for implementations."""
     return observations
 
@@ -470,7 +470,7 @@ class ELMoDataset(SimpleDataset):
     args: the global yaml-derived experiment config dictionary
   """
 
-  def optionally_add_embeddings(self, observations, pretrained_embeddings_path):
+  def optionally_add_embeddings(self, observations, pretrained_embeddings_path, alignment_path=None):
     """Adds pre-computed ELMo embeddings from disk to Observations."""
     layer_index = self.args['model']['model_layer']
     print('Loading ELMo Pretrained Embeddings from {}; using layer {}'.format(pretrained_embeddings_path, layer_index))
@@ -793,7 +793,7 @@ class GPTDataset(SubwordDataset):
       single_layer_features_list.append(single_layer_features)
     return single_layer_features_list
 
-  def optionally_add_embeddings(self, observations, pretrained_embeddings_path):
+  def optionally_add_embeddings(self, observations, pretrained_embeddings_path, alignment_path=None):
     """Adds pre-computed BERT embeddings from disk to Observations."""
     layer_index = self.args['model']['model_layer']
     print(f'Loading GPT-2 Pretrained Embeddings from {pretrained_embeddings_path}; using layer {layer_index}')    
@@ -889,7 +889,7 @@ class RobertaDataset(SubwordDataset):
       single_layer_features_list.append(single_layer_features)
     return single_layer_features_list
 
-  def optionally_add_embeddings(self, observations, pretrained_embeddings_path):
+  def optionally_add_embeddings(self, observations, pretrained_embeddings_path, alignment_path=None):
     """Adds pre-computed BERT embeddings from disk to Observations."""
     layer_index = self.args['model']['model_layer']
     print(f'Loading GPT-2 Pretrained Embeddings from {pretrained_embeddings_path}; using layer {layer_index}')    
