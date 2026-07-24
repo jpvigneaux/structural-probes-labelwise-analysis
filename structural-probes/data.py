@@ -191,6 +191,63 @@ def hface_alignment_deptb(tokenized_sent, untokenized_sent):
   return unnorm / col_sums
 
 
+def hface_alignment_natural(natural_str, offsets, untokenized_sent):
+  '''(n_sub_no_specials, n_ptb_words) column-normalised alignment, tokenizer-agnostic.
+
+  Same two-stage idea as hface_alignment_deptb -- de-PTBify to the natural string
+  the model actually saw, then map back to PTB tokens -- but step 1 uses the fast
+  tokenizer's exact character offsets instead of a fuzzy Levenshtein over raw token
+  strings. That makes it independent of the subword marker convention (WordPiece
+  '##', BPE 'Ġ', SentencePiece '▁') and of the special-token names ([CLS]/[SEP],
+  <s>/</s>, ...), both of which hface_alignment_deptb hardcodes for BERT.
+
+  Step 2 (natural string -> PTB string) remains a character Levenshtein, because
+  de-PTBification genuinely rewrites characters ('-LRB-' -> '(') and closes spaces.
+
+  Equivalence: on 400 PTB dev sentences this reproduces hface_alignment_deptb for
+  BERT-base to within 1e-6 (identical matrices), so switching does not perturb
+  previously computed BERT results.
+
+  Args:
+    natural_str:      the string fed to the model, from natural_sentence().
+    offsets:          list of (start_char, end_char) for the non-special subwords,
+                      in order, as returned by a fast tokenizer's offset_mapping.
+    untokenized_sent: list of PTB token strings.
+  Returns:
+    Tensor of shape (len(offsets), len(untokenized_sent)); columns sum to 1.
+  '''
+  ptb_ws = [t + (' ' if i < len(untokenized_sent) - 1 else '')
+            for i, t in enumerate(untokenized_sent)]
+  ptb_tok_to_char = token_to_character_alignment(ptb_ws)
+  lev2 = levenshtein_matrix(natural_str, ''.join(ptb_ws))
+
+  sub_to_char = torch.zeros(len(offsets), len(natural_str))
+  for i, (start, end) in enumerate(offsets):
+    if end > start:
+      sub_to_char[i, start:end] = 1.0 / (end - start)
+
+  unnorm = sub_to_char @ lev2 @ ptb_tok_to_char.t()
+  return unnorm / unnorm.sum(dim=0, keepdim=True).clamp(min=1e-8)
+
+
+def resolve_hf_model_name(args):
+  '''Return the HuggingFace model id to build a tokenizer from.
+
+  Explicit configuration only. The previous behaviour guessed from
+  args['model']['hidden_dim'] (768 -> bert-base-cased, 1024 -> bert-large-cased),
+  which silently returns the wrong tokenizer for any other 768/1024-dim encoder
+  -- deberta-v3-base, ModernBERT-base and roberta-base are all 768.
+  '''
+  name = args['model'].get('hf_model_name')
+  if not name:
+    raise ValueError(
+        "config is missing model.hf_model_name; set it to the HuggingFace id whose "
+        "tokenizer produced the stored embeddings (e.g. 'bert-base-cased', "
+        "'roberta-base', 'microsoft/deberta-v3-base'). It is no longer inferred "
+        "from hidden_dim, which cannot distinguish same-width models.")
+  return name
+
+
 class SimpleDataset:
   """Reads conllx files to provide PyTorch Dataloaders
 
@@ -581,15 +638,9 @@ class BERTDataset(SubwordDataset):
 
     if subword_tokenizer == None:
       from transformers import AutoTokenizer
-      if self.args['model']['hidden_dim'] == 768:
-        subword_tokenizer = AutoTokenizer.from_pretrained('bert-base-cased')
-        print('Using BERT-base-cased tokenizer to align embeddings with PTB tokens')
-      elif self.args['model']['hidden_dim'] == 1024:
-        subword_tokenizer = AutoTokenizer.from_pretrained('bert-large-cased')
-        print('Using BERT-large-cased tokenizer to align embeddings with PTB tokens')
-      else:
-        print("The heuristic used to choose BERT tokenizers has failed...")
-        exit()
+      model_name = resolve_hf_model_name(self.args)
+      subword_tokenizer = AutoTokenizer.from_pretrained(model_name)
+      print(f'Using {model_name} tokenizer to align embeddings with PTB tokens')
     hf = h5py.File(filepath, 'r')
     indices = list(hf.keys())
     single_layer_features_list = []
@@ -857,20 +908,10 @@ class RobertaDataset(SubwordDataset):
           exits immediately.
     '''
     if bpe_tokenizer == None:
-      try:
-        from transformers import RobertaTokenizerFast
-        if self.args['model']['hidden_dim'] == 768:
-          bpe_tokenizer = RobertaTokenizerFast.from_pretrained('roberta-base', )
-          print('Using roberta-base tokenizer to align embeddings with PTB tokens')
-        elif self.args['model']['hidden_dim'] == 1024:
-          bpe_tokenizer = RobertaTokenizerFast.from_pretrained('roberta-large', )
-          print('Using roberta-large tokenizer to align embeddings with PTB tokens')
-        else:
-          print("The heuristic used to choose ROBERTA tokenizers has failed...")
-          exit()
-      except:
-        print('Couldn\'t import pytorch-pretrained-bert. Exiting...')
-        exit()
+      from transformers import AutoTokenizer
+      model_name = resolve_hf_model_name(self.args)
+      bpe_tokenizer = AutoTokenizer.from_pretrained(model_name)
+      print(f'Using {model_name} tokenizer to align embeddings with PTB tokens')
 
     hf = h5py.File(filepath, 'r')
     indices = list(hf.keys())

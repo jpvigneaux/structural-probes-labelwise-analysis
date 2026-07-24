@@ -26,6 +26,7 @@ dataset:
 model:
   hidden_dim: 768
   model_type: roberta-disk
+  hf_model_name: roberta-base  # tokenizer that produced the embeddings (no hidden_dim guessing)
   use_disk: True
   model_layer: 0  # overridden per-layer by submit_train_probes.sh; 0=embedding, 1-12=transformer
 probe:
