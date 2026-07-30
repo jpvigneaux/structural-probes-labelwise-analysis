@@ -82,18 +82,37 @@ def main():
                             return_special_tokens_mask=True)
             mask = enc['special_tokens_mask']
 
-            # The consuming branch in data.py drops the first and last embedding
-            # rows, so the specials must be exactly one leading and one trailing
-            # token. Fail loudly rather than silently misalign a new model.
-            if mask[0] != 1 or mask[-1] != 1 or sum(mask) != 2:
+            # Count the leading/trailing specials this tokenizer adds. BERT-family
+            # models add one each ([CLS]/[SEP]); GPT-style tokenizers add none, so
+            # a hardcoded features[1:-1] would silently drop two real tokens. The
+            # counts are stored on the file and honoured when the embeddings are
+            # loaded. Specials in the interior are not supported.
+            n_pre = 0
+            while n_pre < len(mask) and mask[n_pre] == 1:
+                n_pre += 1
+            n_suf = 0
+            while n_suf < len(mask) - n_pre and mask[len(mask) - 1 - n_suf] == 1:
+                n_suf += 1
+            if sum(mask) != n_pre + n_suf:
                 raise ValueError(
-                    f'{args.model_name} does not use exactly one leading and one '
-                    f'trailing special token (special_tokens_mask={mask}); the '
-                    f'features[1:-1] convention in data.py would misalign it.')
+                    f'{args.model_name} places special tokens inside the sentence '
+                    f'(special_tokens_mask={mask}); this is not supported.')
+            if idx == 0:
+                first_pre, first_suf = n_pre, n_suf
+            elif (n_pre, n_suf) != (first_pre, first_suf):
+                raise ValueError(
+                    f'inconsistent special-token counts: sentence 0 had '
+                    f'({first_pre},{first_suf}), sentence {idx} has ({n_pre},{n_suf}).')
 
             offsets = [o for o, m in zip(enc['offset_mapping'], mask) if m == 0]
             align = hface_alignment_natural(natural, offsets, tokens)
             fout.create_dataset(str(idx), data=align.numpy().astype(np.float32))
+
+        # Consumed by the pre-aligned branch of data.BERTDataset.
+        fout.attrs['n_prefix_special'] = int(first_pre)
+        fout.attrs['n_suffix_special'] = int(first_suf)
+        fout.attrs['hf_model_name'] = args.model_name
+        print(f'special tokens per sentence: {first_pre} leading, {first_suf} trailing')
 
     print('Done.')
 

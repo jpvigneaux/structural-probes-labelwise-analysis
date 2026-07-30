@@ -127,7 +127,10 @@ def fairseq_to_hf(fairseq_state: dict) -> dict:
 # ---------------------------------------------------------------------------
 print(f'Loading fairseq checkpoint from {args.model_dir} ...')
 ckpt_path = Path(args.model_dir) / 'model.pt'
-ckpt = torch.load(ckpt_path, map_location=device)
+# weights_only=False: PyTorch >=2.6 defaults to True, which refuses this
+# fairseq checkpoint because it pickles an omegaconf DictConfig alongside the
+# tensors. The file is the checkpoint we downloaded from Facebook Research.
+ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
 
 fairseq_state = ckpt.get('model', ckpt)   # some checkpoints nest under 'model'
 hf_state = fairseq_to_hf(fairseq_state)
@@ -217,5 +220,16 @@ with h5py.File(args.output, 'w') as fout:
         dset[:, :, :] = np.vstack(
             [h.squeeze(0).cpu().numpy()[np.newaxis] for h in hidden_states]
         )
+
+    # Same provenance attributes as the other extractors, so that
+    # scripts/check_embeddings.py can verify this file's layout against
+    # experiments/paper_runs.yaml rather than inferring it from the checkpoint count.
+    fout.attrs['n_checkpoints'] = LAYER_COUNT + 1
+    fout.attrs['has_midblock'] = False
+    fout.attrs['hf_model_name'] = 'roberta.base.shuffle.n1'
+    fout.attrs['layout'] = '0=embed_out,k=post_block'
+    fout.attrs['convention'] = 'B:consumed'
+    fout.attrs['convention_note'] = ('post-LayerNorm hidden_states; RoBERTa is a '
+                                     'post-LN encoder, so conventions A and B coincide')
 
 print(f'\nDone. Written to {args.output}')
