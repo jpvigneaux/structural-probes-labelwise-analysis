@@ -19,29 +19,60 @@ everything under [`experiments/`](experiments/) is our own.
 
 ## What reproduces what
 
-The paper contains 8 figures and 2 tables. The table below maps each to the
-script that produces it and the data it consumes.
+Everything in the paper is now produced by this repository, including the
+weighted-least-squares regression and the similarity-corrected entropy that
+earlier versions of this README described as external. Artifacts are named by
+their LaTeX label rather than by number, since float placement moves the numbers
+around.
 
-| Paper artifact | Script | Input |
-|---|---|---|
-| Fig 1 — ULAS by relation (verb arguments) | [`experiments/bert-base-prd/figures/plot_selected_relations.py`](experiments/bert-base-prd/figures/plot_selected_relations.py) | `bert-base-prd/results-hface/layer-*/training_uuas_by_relation.tsv` |
-| Fig 2 — ULAS by relation (top/mid/low) | [`experiments/bert-base-prd/figures/plot_selected_relations_2.py`](experiments/bert-base-prd/figures/plot_selected_relations_2.py) | same |
-| Fig 3 — ULAS by relation, RoBERTa-Shuffle-N1 | [`experiments/roberta-shufflen1-prd/figures/plot_selected_relations.py`](experiments/roberta-shufflen1-prd/figures/plot_selected_relations.py) | `roberta-shufflen1-prd/results/layer-*/` |
-| Fig 4 — mean ULAS vs arc length | [`experiments/bert-base-prd/uuas_mean_curves_by_checkpoint.py`](experiments/bert-base-prd/uuas_mean_curves_by_checkpoint.py) → [`uuas_mean_curves_png.py`](experiments/bert-base-prd/uuas_mean_curves_png.py) | `results-hface/` + PTB corpus |
-| Fig 5 — R² heatmap, log-linear decay | [`experiments/bert-base-prd/regression_uas_vs_log_distance.py`](experiments/bert-base-prd/regression_uas_vs_log_distance.py) | `.npz` (below) |
-| Fig 6 — relation dendrogram (ULAS-only) | [`experiments/bert-base-prd/cluster_relations_by_distance.py`](experiments/bert-base-prd/cluster_relations_by_distance.py) `--alpha 1.0` | `.npz` (below) |
-| **Fig 7 — head sim-entropy vs ULAS** | **external — produced independently by a collaborator; not in this repo** | — |
-| Fig 8 — four-panel dendrograms (appendix) | [`experiments/bert-base-prd/cluster_relations_by_distance.py`](experiments/bert-base-prd/cluster_relations_by_distance.py) | `.npz` (below) |
-| **Table 1 — entropy WLS regression** | **external — produced independently by a collaborator; not in this repo** | — |
-| Table 2 — 90th-percentile arc length (appendix) | [`experiments/bert-base-prd/inspect_distance_ranges.py`](experiments/bert-base-prd/inspect_distance_ranges.py) / `cluster_relations_by_distance.py` | `.npz` + PTB corpus |
+Six probing runs stand behind the paper. Which model, checkpoint layout,
+LayerNorm convention and tokenizer each uses is recorded in
+[`experiments/paper_runs.yaml`](experiments/paper_runs.yaml), and the drivers in
+[`experiments/drivers/`](experiments/drivers/) read it rather than hardcoding
+anything.
 
-> **Note on Fig 7 and Table 1 (entropy analysis).** The similarity-corrected
-> entropy plot and the weighted-least-squares regression predicting ULAS were
-> produced independently by a collaborator with a separate codebase, and are
-> **not** included here. Reproducing them requires that external code plus
-> fastText `wiki-news` word vectors.
+### Main text
 
-The `.npz` referenced above is
+| Paper artifact | Script |
+|---|---|
+| `fig:dependencies1`, `fig:dependencies2` — ULAS by relation | [`scripts/plot_selected_relations.py`](scripts/plot_selected_relations.py) |
+| `fig:dependencies-shuffled` — the same for RoBERTa-Shuffle-n1 | same, on the `shufflen1` run |
+| `fig:performance-as-a-function-of-distance` — mean ULAS vs arc length | [`scripts/figures/uuas_mean_curves_by_checkpoint.py`](scripts/figures/uuas_mean_curves_by_checkpoint.py) → [`uuas_mean_curves_png.py`](scripts/figures/uuas_mean_curves_png.py) |
+| `fig:R2-log-distance-model` — R² heat map, log-linear decay | [`scripts/figures/regression_uas_vs_log_distance.py`](scripts/figures/regression_uas_vs_log_distance.py) |
+| `fig:ULAS-only-dendrogram` — relation dendrogram, α = 1 | [`scripts/figures/cluster_relations_by_distance.py`](scripts/figures/cluster_relations_by_distance.py) `--alpha 1.0` |
+| `tab:regression_results` — the three-predictor WLS regression | [`scripts/regression/ptb_wls_regression.py`](scripts/regression/ptb_wls_regression.py) |
+
+### Appendices
+
+| Paper artifact | Script |
+|---|---|
+| `tab:arc-len-90` — 90th-percentile arc length | [`scripts/figures/cluster_relations_by_distance.py`](scripts/figures/cluster_relations_by_distance.py) |
+| `fig:dendrogram_relations`, `fig:dendrogram_w1` — four-panel dendrograms over α | same, `--range-metric p90` / `w1` |
+| `tab:other-models` — the regression, repeated on five models | [`scripts/regression/ptb_wls_regression.py`](scripts/regression/ptb_wls_regression.py) per run |
+| `fig:app-selected`, `fig:app-curves`, `fig:app-r2a`, `fig:app-r2b`, `fig:app-dendro` | [`experiments/drivers/08_figures.sh`](experiments/drivers/08_figures.sh) per run |
+| `fig:predictor-grid` — predictors against ULAS | [`scripts/plot_predictor_grid.py`](scripts/plot_predictor_grid.py) |
+| `tab:moment-ladder` — does dispersion or skew pay for itself? | [`scripts/regression/add_length_spread.py`](scripts/regression/add_length_spread.py) |
+| sd vs variance (Appendix "Standard deviation, not variance") | [`scripts/regression/compare_dispersion_scale.py`](scripts/regression/compare_dispersion_scale.py) |
+| mean(log n) vs log(mean n) (same appendix) | [`scripts/regression/compare_length_predictors.py`](scripts/regression/compare_length_predictors.py) |
+| `tab:shuffled-regression`, `fig:app-shuffled-curves`, `fig:app-shuffled-r2` | the same scripts, on the `shufflen1` run |
+| the reliability ceiling (Appendix "not a floor effect") | [`scripts/regression/ulas_reliability.py`](scripts/regression/ulas_reliability.py) |
+| the similarity-corrected entropy predictor | [`scripts/regression/contextual_sim_entropy.py`](scripts/regression/contextual_sim_entropy.py) |
+
+### Checking that it reproduced
+
+```bash
+sbatch experiments/drivers/09_verify.sh
+```
+
+`scripts/check_embeddings.py` validates each run's embeddings and alignments
+against the manifest; `scripts/verify_paper_numbers.py` refits every regression
+and diffs it against the published value. On the archived runs all six pass the
+first and all 88 published values reproduce exactly as printed. Five of them were
+corrected in the paper after this check first ran — see
+[REPRODUCING.md](REPRODUCING.md#0-the-manifest-and-how-to-check-you-have-reproduced-anything)
+for which, and why they were wrong.
+
+The `.npz` referenced by the figure scripts is
 `experiments/bert-base-prd/figures/uuas_mean_curves_by_checkpoint.npz`,
 the per-relation ULAS-by-distance curves for all checkpoints. It is written by
 `uuas_mean_curves_by_checkpoint.py` (which needs the PTB corpus) and is bundled
@@ -73,10 +104,8 @@ $PY figures/plot_selected_relations.py            # Fig 3
 
 ### 2. Full reproduction from scratch (SLURM + external data)
 
-Requires the external data described below. This full chain (extract → align →
-train → per-relation ULAS) has been verified end-to-end on a small PTB subset;
-see [Natural-sentence embeddings](#natural-sentence-embeddings-our-variation).
-Broad pipeline:
+Requires the external data described below, and covers all six probing runs.
+[REPRODUCING.md](REPRODUCING.md) is the detailed account; the short version:
 
 0. **Pre-download models (once, on a node with internet).** Compute nodes have
    no outbound internet, so cache the HF models the extraction scripts need:
@@ -87,19 +116,24 @@ Broad pipeline:
 1. **Prep PTB.** Convert PTB-WSJ constituency trees to Stanford Dependencies
    (`scripts/convert_splits_to_depparse.sh`) and to whitespace-tokenized text
    (`scripts/convert_conll_to_raw.py`).
-2. **Extract embeddings.**
-   `experiments/bert-base-prd/submit_extract_natural_embeddings.sh`
-   (BERT-base, 26 checkpoints) and
-   `experiments/roberta-shufflen1-prd/submit_extract_embeddings.sh`
-   (RoBERTa-Shuffle-N1).
-3. **Precompute alignments** (BERT ↔ PTB):
-   `experiments/bert-base-prd/submit_precompute_alignments.sh`.
-4. **Train probes** (one parse-distance probe per checkpoint):
-   `sbatch experiments/bert-base-prd/run_all_hface_prealigned.sh`,
-   `python experiments/roberta-shufflen1-prd/submit_train_probes.py`.
-5. **Per-relation ULAS:** `compute_uuas_by_relation_dev_test.py` in each
-   experiment directory.
-6. **Distance curves & figures** as in level 1.
+2. **Point `roots:` in [`experiments/paper_runs.yaml`](experiments/paper_runs.yaml)
+   at your own directories.**
+3. **Corpus statistics, once:** `sbatch experiments/drivers/06_predictors.sh`.
+   These are identical for every model — only the ULAS values differ between
+   rows of `tab:other-models`.
+4. **Each run:** `experiments/drivers/submit_all.sh <run> <results-dir>`, which
+   submits extraction → LayerNorm convention → alignment → probe training →
+   per-relation ULAS → tables → figures with the SLURM dependencies wired up and
+   the array bounds derived from the run's own checkpoint count.
+   ```bash
+   for r in bertbase deberta modernbert gpt2 gptj shufflen1; do
+       experiments/drivers/submit_all.sh $r /scratch/$USER/probes/$r
+   done
+   ```
+5. **Verify:** `sbatch experiments/drivers/09_verify.sh`.
+
+Account `p33044` is capped at 8 concurrent GPU jobs, so the training arrays are
+throttled to 6 and a long pending queue is expected rather than a fault.
 
 ---
 
@@ -154,26 +188,40 @@ alignment (subwords → natural string → PTB string), precomputed by
 Too large to bundle; needed only for full reproduction (level 2):
 
 - **PTB-WSJ** dependency parses (CoNLL-X). Requires an unmodified PTB3 license.
-- **BERT-base** natural-sentence embeddings (26-layer HDF5).
-- **RoBERTa-Shuffle-N1** model + embeddings (Sinha et al., EMNLP 2021).
-- **HF model cache** for `bert-base-cased` / `roberta-base` — compute nodes are
-  offline, so run `scripts/predownload_models.py` first (level-2 step 0). Note
+- **Natural-sentence embeddings** for the six runs (HDF5; 13 to 46 checkpoints
+  per sentence depending on the model, and 4096-dimensional for GPT-J).
+- **RoBERTa-Shuffle-N1** fairseq checkpoint (Sinha et al., EMNLP 2021), which
+  `scripts/convert_raw_to_roberta_shufflen1.py` converts to HF layout.
+- **fastText `wiki-news-300d-1M.vec`**, the static space the similarity-corrected
+  head entropy is computed in.
+- **HF model cache** for `bert-base-cased`, `roberta-base`,
+  `microsoft/deberta-v3-base`, `answerdotai/ModernBERT-base`, `gpt2` and
+  `EleutherAI/gpt-j-6B` — compute nodes are offline, so run
+  `scripts/predownload_models.py` first (level-2 step 0). Note
   `transformer_lens` resolves `bert-base-cased` to its canonical id
   `google-bert/bert-base-cased`; the script fetches both.
 
 ## Layout
 
 ```
-structural-probes-label-analysis/
+structural-probes-labelwise-analysis/
 ├── structural-probes/     # Bundled upstream Hewitt & Manning library
-├── scripts/               # Embedding extraction + PTB prep
+├── scripts/               # Embedding extraction, alignment, PTB prep, checks
+│   ├── regression/               # The WLS regression and its model comparisons
+│   ├── figures/                  # Curves, R² heat maps, dendrograms
+│   ├── check_embeddings.py       # Embeddings + alignments vs the manifest
+│   ├── check_extractor_equivalence.py   # The 1+L and 2+2L paths agree
+│   ├── make_probe_config.py      # One probe config, from the manifest
+│   └── verify_paper_numbers.py   # Every published number vs the code
 ├── experiments/
+│   ├── paper_runs.yaml           # The six runs, and what the paper claims for each
+│   ├── drivers/                  # One SLURM script per pipeline stage
 │   ├── bert-base-prd/            # BERT-base probes, ULAS, distance/cluster analysis
 │   │   ├── results-hface/        # Saved probe outputs (26 checkpoints)
 │   │   ├── figures/              # Generators + rendered paper figures
 │   │   ├── tables/               # Regression / range CSV+HTML
 │   │   └── data/sentences.txt    # De-PTBified natural sentences (embedding input)
-│   └── roberta-shufflen1-prd/    # RoBERTa-Shuffle-N1 probes (Fig 3)
+│   └── roberta-shufflen1-prd/    # RoBERTa-Shuffle-N1 probes
 ├── paths.yaml / paths.sh  # Machine-local paths — edit these
 ├── requirements.txt
 └── UPSTREAM_README.md     # Original structural-probes README

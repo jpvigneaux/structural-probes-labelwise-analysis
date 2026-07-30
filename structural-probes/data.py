@@ -623,12 +623,20 @@ class BERTDataset(SubwordDataset):
       hf        = h5py.File(filepath,       'r')
       align_hf  = h5py.File(alignment_path, 'r')
       indices   = list(hf.keys())
+      # How many special-token rows to strip from each stored sentence. Written by
+      # scripts/precompute_alignments_hf.py; defaults to the BERT-era convention of
+      # one leading [CLS] and one trailing [SEP] for alignment files predating it.
+      # GPT-style tokenizers add none, where stripping would delete real tokens.
+      n_pre = int(align_hf.attrs.get('n_prefix_special', 1))
+      n_suf = int(align_hf.attrs.get('n_suffix_special', 1))
+      print(f'Stripping {n_pre} leading and {n_suf} trailing special-token rows')
       single_layer_features_list = []
       for index in tqdm(sorted([int(x) for x in indices]), desc='[loading embeddings]'):
         observation          = observations[index]
         single_layer_features = np.array(hf[str(index)][elmo_layer])   # (n_sub, hidden)
-        align_mat = torch.tensor(np.array(align_hf[str(index)]), dtype=torch.float)  # (n_sub-2, n_words)
-        sub_feats = torch.tensor(single_layer_features[1:-1],          dtype=torch.float)  # (n_sub-2, hidden)
+        align_mat = torch.tensor(np.array(align_hf[str(index)]), dtype=torch.float)  # (n_sub_no_specials, n_words)
+        end = single_layer_features.shape[0] - n_suf
+        sub_feats = torch.tensor(single_layer_features[n_pre:end],     dtype=torch.float)
         single_layer_features = align_mat.t() @ sub_feats               # (n_words, hidden)
         assert single_layer_features.shape[0] == len(observation.sentence)
         single_layer_features_list.append(single_layer_features)
