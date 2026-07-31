@@ -247,7 +247,24 @@ python scripts/regression/compare_dispersion_scale.py -uuas ... -sim ... -len ..
 
 # does the third moment add anything?        (no: skew insignificant everywhere)
 python scripts/regression/add_length_spread.py -uuas ... -sim ... -len ... --full
+
+# should the diversity's log-argument be normalised by the relation's mean
+# within-relation similarity?   (no: the published form wins on all five models)
+python scripts/regression/compare_diversity_normalisation.py -uuas ... -sim ... -len ...
 ```
+
+The last of these answers a question about the diversity predictor rather than
+about arc length. The paper defines it as `H_sim = -sum_x p(x) log2 sum_y Z_xy p(y)`,
+with no normalisation, and that is what `contextual_sim_entropy.py` computes.
+Dividing the log-argument by `zpp = sum_x sum_y Z_xy p(x) p(y)` — which makes the
+measure invariant to a relation's overall similarity level — is a defensible
+alternative, and not a constant shift: `log2 zpp` ranges over 2.6 bits across the
+42 relations. It fits worse in every model (`R^2` drops by 0.033 to 0.164, AIC
+worsens by 3.5 to 20.9), and adding `log2 zpp` alongside the published predictor
+is not significant in four of the five (`p` = .136 to .439; .064 for
+DeBERTa-v3-base). Plain Shannon entropy, the `Z = I` limit, is worse still
+everywhere, so the similarity correction earns its place but the normalisation
+does not.
 
 A fourth script bears on how the regression should be *read* rather than on how
 it is specified:

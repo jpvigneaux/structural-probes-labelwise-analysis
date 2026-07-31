@@ -208,13 +208,21 @@ def shannon_entropy(counts):
 def sim_entropy(counts, word2idx, vectors, chunk):
     """-sum_x p(x) log2 q(x) with q = max(cos,0) @ p, computed in row chunks.
 
+    Returns (H_sim, zpp) where zpp = sum_x sum_y Z_xy p(x) p(y) is the mean
+    within-relation similarity. zpp is not used by the published entropy, which
+    is the formula printed in the paper; it is reported so that the normalised
+    variant -sum_x p(x) log2 (q(x)/zpp) = H_sim + log2(zpp) can be fitted and
+    compared. See compare_diversity_normalisation.py: the two differ by a term
+    that varies across relations, so which one predicts better is an empirical
+    question rather than a matter of convention.
+
     Types with no vector are treated as orthogonal to everything (q(x) = p(x)),
     which is the same convention the sparse implementation uses for missing pairs.
     """
     words = list(counts)
     total = sum(counts.values())
     if total == 0 or not words:
-        return 0.0
+        return 0.0, 1.0
     probs = np.array([counts[w] / total for w in words], dtype=np.float32)
 
     idx = np.array([word2idx.get(w, -1) for w in words])
@@ -232,7 +240,8 @@ def sim_entropy(counts, word2idx, vectors, chunk):
             out[a:b] = S @ p_have
         q[have] += out
     q = np.maximum(q, 1e-12)
-    return float(-np.sum(probs * np.log2(q)))
+    zpp = float(np.sum(probs * q))
+    return float(-np.sum(probs * np.log2(q))), zpp
 
 
 def main():
@@ -282,14 +291,17 @@ def main():
     print('Computing per-relation entropies...')
     with open(args.out, 'w') as fout:
         fout.write('deprel\tn_distinct_heads\tn_distinct_deps\thead_entropy_bits\t'
-                   'dep_entropy_bits\thead_sim_entropy_bits\tdep_sim_entropy_bits\n')
+                   'dep_entropy_bits\thead_sim_entropy_bits\tdep_sim_entropy_bits\t'
+                   'head_zpp\tdep_zpp\n')
         for rel in relations:
             h, d = counts['head'][rel], counts['dep'][rel]
+            h_ent, h_zpp = sim_entropy(h, word2idx, vectors, args.chunk)
+            d_ent, d_zpp = sim_entropy(d, word2idx, vectors, args.chunk)
             fout.write('\t'.join([
                 rel, str(len(h)), str(len(d)),
                 f'{shannon_entropy(h):.6f}', f'{shannon_entropy(d):.6f}',
-                f'{sim_entropy(h, word2idx, vectors, args.chunk):.6f}',
-                f'{sim_entropy(d, word2idx, vectors, args.chunk):.6f}',
+                f'{h_ent:.6f}', f'{d_ent:.6f}',
+                f'{h_zpp:.8f}', f'{d_zpp:.8f}',
             ]) + '\n')
     print(f'Wrote {args.out}  (similarity source: {source})')
 
