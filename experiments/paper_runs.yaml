@@ -3,7 +3,7 @@
 # This file is the bridge between the article and the code: `scripts/verify_paper_numbers.py`
 # recomputes each `published:` entry from the corresponding `results:` directory
 # using the same scripts documented in REPRODUCING.md, and reports any deviation.
-# If you re-run the pipeline, point `roots:` at your own output and re-verify.
+# If you re-run the pipeline, point `roots:` in paths.yaml at your own output and re-verify.
 #
 # The `extraction:` block records what each run was actually made from. It is not
 # decoration: two of the six runs use a checkpoint layout that differs from the
@@ -11,29 +11,11 @@
 # differs by architecture family. Getting either wrong renumbers the checkpoints
 # and silently invalidates every "optimal checkpoint" claim in the paper.
 
-roots:
-  # Where the archived runs live. Two directories rather than one only because
-  # the runs were made in two batches; nothing depends on the split.
-  lnconv: /path/to/scratch/lnconv
-  unified: /path/to/scratch/unified
-  figs: /path/to/scratch/regression/figs
-  # Where a fresh run writes. experiments/drivers/ uses these; verification uses
-  # the two above, so you can rebuild without overwriting the archive.
-  corpus: /path/to/project-data/training-data
-  embeddings: /path/to/scratch/structural-probes-wip/Embeddings/Natural_sentences
-  alignments: /path/to/scratch/structural-probes-wip/Alignments/Natural_sentences
-  models: /path/to/scratch/structural-probes-wip/Models
-  out: /path/to/scratch/regression/out
-
-# Corpus statistics, computed once on PTB train and shared by every row of
-# Table `tab:other-models` -- only the ULAS values differ between models.
-predictors:
-  sim: /path/to/scratch/regression/out/sim_static_fasttext.tsv
-  length: /path/to/scratch/regression/out/dep-lengths-ptb.tsv
-  # The model's own contextual space, used for the robustness check in S.EntropySec.
-  sim_contextual_bert: /path/to/scratch/regression/out/sim_ctx_bertbase_ck16.tsv
-  # fastText vectors the static-space entropy is computed in.
-  fasttext_vec: /path/to/scratch/regression/emb/wiki-news-300d-1M.vec
+# Paths are NOT in this file. The `roots:` and `predictors:` blocks live in
+# paths.yaml, which is git-ignored and created from paths.yaml.template, so that
+# the manifest -- the part worth version-controlling -- carries no path specific
+# to one machine. experiments/drivers/manifest.py resolves the `{root}`
+# placeholders below against paths.yaml.
 
 runs:
 

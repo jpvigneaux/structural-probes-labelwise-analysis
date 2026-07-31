@@ -116,8 +116,8 @@ Requires the external data described below, and covers all six probing runs.
 1. **Prep PTB.** Convert PTB-WSJ constituency trees to Stanford Dependencies
    (`scripts/convert_splits_to_depparse.sh`) and to whitespace-tokenized text
    (`scripts/convert_conll_to_raw.py`).
-2. **Point `roots:` in [`experiments/paper_runs.yaml`](experiments/paper_runs.yaml)
-   at your own directories.**
+2. **Fill in `paths.yaml` and `paths.sh`** from the templates (see
+   [Configuring paths](#configuring-paths)); `roots:` is where your output goes.
 3. **Corpus statistics, once:** `sbatch experiments/drivers/06_predictors.sh`.
    These are identical for every model — only the ULAS values differ between
    rows of `tab:other-models`.
@@ -156,18 +156,36 @@ All non-trivial jobs run on SLURM (CPU: `--partition=short`; GPU:
 
 ## Configuring paths
 
-Machine-local paths live in [`paths.yaml`](paths.yaml) (read by Python) and
-[`paths.sh`](paths.sh) (sourced by shell scripts). Edit both before running:
+**Start here.** Two files hold every machine-local path; both are git-ignored,
+and both ship as templates:
 
-- `repo_root` — already set to this repository's location.
-- `data.corpus` — PTB-WSJ CoNLL-X (`ptb3-wsj-{train,dev,test}.conllx`).
-- `data.embeddings.*`, `data.models.*`, `data.alignment.*` — external
-  embedding / model / alignment directories (not shipped; large).
-- `HF_HOME` (in `paths.sh`) — HuggingFace cache the offline jobs read; point it
-  at a directory you own and populate it with `scripts/predownload_models.py`.
+```bash
+cp paths.yaml.template paths.yaml     # read by Python
+cp paths.sh.template   paths.sh       # sourced by shell scripts
+```
 
-The saved result configs under `results-hface/` and `results/` retain the
-original absolute paths from the run that produced them, kept as provenance.
+They carry the same values in two syntaxes — keep them in sync. Fill in:
+
+| key | what it is |
+|---|---|
+| `python` / `PYTHON` | absolute path to your interpreter. Use the explicit path; `conda activate` is unreliable under SLURM. |
+| `roots.corpus` / `DATA_DIR` | PTB-WSJ CoNLL-X, `ptb3-wsj-{train,dev,test}.conllx` |
+| `roots.embeddings`, `roots.alignments` | where extraction and alignment write, one subdirectory per model / tokenizer |
+| `roots.models` | where the RoBERTa-Shuffle-n1 fairseq checkpoint was downloaded |
+| `roots.out`, `roots.figs` | corpus statistics and figures |
+| `roots.results`, `roots.lnconv`, `roots.unified` | the probing runs. Point all three at your own output when reproducing from scratch. |
+| `predictors.*` | the two corpus-statistic TSVs, and the fastText `wiki-news-300d-1M.vec` the head entropy is measured in |
+| `hf_home` / `HF_HOME` | HuggingFace cache the offline jobs read. Point it at a directory **you own** and populate it with `scripts/predownload_models.py`; a shared cache with 0-byte blobs fails with a JSON decode error that looks nothing like a caching problem. |
+
+Nothing else in the repository contains an absolute path. In particular
+[`experiments/paper_runs.yaml`](experiments/paper_runs.yaml) — the manifest of
+what each probing run *is*, and what the paper claims for it — deliberately
+carries none, so it can be version-controlled and shared while the paths to your
+own copies stay local. `scripts/_manifest.py` is the single place that joins the
+two, and the drivers and the verification script both go through it.
+
+The SLURM account and partition in the `#SBATCH` directives of
+`experiments/drivers/*.sh` cannot be read from the config — edit those directly.
 
 ## Natural-sentence embeddings (our variation)
 
@@ -222,7 +240,27 @@ structural-probes-labelwise-analysis/
 │   │   ├── tables/               # Regression / range CSV+HTML
 │   │   └── data/sentences.txt    # De-PTBified natural sentences (embedding input)
 │   └── roberta-shufflen1-prd/    # RoBERTa-Shuffle-N1 probes
-├── paths.yaml / paths.sh  # Machine-local paths — edit these
+├── scripts/_manifest.py   # Joins paper_runs.yaml with your local paths.yaml
+├── paths.yaml.template    # Copy to paths.yaml (git-ignored) and fill in
+├── paths.sh.template      # Copy to paths.sh   (git-ignored) and fill in
 ├── requirements.txt
+├── LICENSE                # Apache 2.0
 └── UPSTREAM_README.md     # Original structural-probes README
 ```
+
+---
+
+## Licence and attribution
+
+Released under the **Apache License 2.0**, the licence of the upstream
+[structural-probes](https://github.com/john-hewitt/structural-probes)
+repository by John Hewitt, of which `structural-probes/` here is a derivative.
+
+`LICENSE` retains Hewitt's copyright notice, as Apache 2.0 §4 requires, and adds
+one for the work in this repository. Modifications to the upstream library are
+listed in [`UPSTREAM_README.md`](UPSTREAM_README.md); the substantive one is
+`structural-probes/data.py`, which gained a model-agnostic pre-aligned embedding
+path that honours each tokenizer's own special-token counts rather than assuming
+BERT's `[CLS]`/`[SEP]`.
+
+If you use this code, please cite both the paper and Hewitt & Manning (2019).

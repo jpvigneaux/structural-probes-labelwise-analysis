@@ -12,7 +12,7 @@ chart shows:
 
 Usage (on a Quest CPU node):
     python uuas_by_relation_distance.py [--layer 8] [--split dev] \
-        [--experiment-dir /path/to/structural-probes-labelwise-analysis/experiments/bert-base-prd] \
+        [--experiment-dir {REPO_ROOT}/experiments/bert-base-prd] \
         [--out path/to/output.html]
 """
 import argparse

@@ -1,0 +1,67 @@
+# Machine-local paths. Copy to paths.yaml and edit; paths.yaml is git-ignored.
+#
+#     cp paths.yaml.template paths.yaml
+#     cp paths.sh.template   paths.sh      # the shell twin, same values
+#
+# This is the only file that should ever contain a path specific to your
+# machine. Nothing under scripts/ or experiments/ hardcodes one, and
+# experiments/paper_runs.yaml deliberately contains none, so that the manifest
+# of probing runs can be committed while the paths to them stay local.
+#
+# The SLURM account and partition in the #SBATCH directives of
+# experiments/drivers/*.sh cannot be read from here -- edit those lines directly.
+
+# Absolute path to the Python interpreter in your environment. Use the explicit
+# interpreter rather than `conda activate`, which is unreliable under SLURM.
+python: /path/to/conda/envs/sp-env/bin/python
+
+# Conda initialisation script and environment name, for scripts that activate
+# conda rather than calling the interpreter directly.
+conda_init: /path/to/mamba/etc/profile.d/conda.sh
+conda_env: sp-env
+
+# HuggingFace cache. Compute nodes are usually offline, so populate this from a
+# node with internet using scripts/predownload_models.py. Point it at a
+# directory you own: a shared cache with 0-byte blobs fails with a JSON decode
+# error that looks nothing like a caching problem.
+hf_home: /path/to/scratch/hf-cache
+
+roots:
+  # PTB3-WSJ CoNLL-X splits: ptb3-wsj-{train,dev,test}.conllx
+  corpus: /path/to/training-data
+
+  # Where extraction writes, one subdirectory per model (see the `embeddings:`
+  # key of each run in experiments/paper_runs.yaml).
+  embeddings: /path/to/Embeddings/Natural_sentences
+
+  # Where alignment matrices are written, one subdirectory per tokenizer.
+  alignments: /path/to/Alignments/Natural_sentences
+
+  # Where the RoBERTa-Shuffle-n1 fairseq checkpoint was downloaded.
+  models: /path/to/Models
+
+  # Corpus statistics from experiments/drivers/06_predictors.sh.
+  out: /path/to/regression/out
+
+  # Figures and the curve NPZs from experiments/drivers/08_figures.sh.
+  figs: /path/to/regression/figs
+
+  # The probing runs themselves. `results` is where a fresh run writes.
+  # `lnconv` and `unified` are the two directories the archived runs live in --
+  # two rather than one only because they were made in separate batches. If you
+  # are reproducing from scratch, point all three at your own output and
+  # scripts/verify_paper_numbers.py will check it against the published values.
+  results: /path/to/probes
+  lnconv: /path/to/lnconv
+  unified: /path/to/unified
+
+predictors:
+  # Built once by experiments/drivers/06_predictors.sh, shared by every model.
+  sim: /path/to/regression/out/sim_static_fasttext.tsv
+  length: /path/to/regression/out/dep-lengths-ptb.tsv
+  # The probed model's own contextual space, for the robustness check that
+  # repeats the regression with entropy measured where the probe operates.
+  sim_contextual_bert: /path/to/regression/out/sim_ctx_bertbase_ck16.tsv
+  # fastText vectors the static-space head entropy is computed in:
+  # wiki-news-300d-1M.vec from https://fasttext.cc/docs/en/english-vectors.html
+  fasttext_vec: /path/to/wiki-news-300d-1M.vec

@@ -11,7 +11,7 @@ cannot disagree about which run they are talking about.
     $ manifest.py gptj post_block_checkpoints        # lists print space-separated
     1 2 3 ... 28
     $ manifest.py --path gptj results                # {root} placeholders expanded
-    /path/to/scratch/lnconv/results-gptj-convA
+    /your/scratch/lnconv/results-gptj-convA
     $ manifest.py --keys                             # every run key
     bertbase deberta modernbert gpt2 gptj shufflen1
     $ manifest.py --root embeddings
@@ -24,9 +24,10 @@ import argparse
 import sys
 from pathlib import Path
 
-import yaml
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / 'scripts'))
+import _manifest                                              # noqa: E402
 
-MANIFEST = Path(__file__).resolve().parent.parent / 'paper_runs.yaml'
+MANIFEST = _manifest.MANIFEST
 
 
 def main():
@@ -35,6 +36,9 @@ def main():
     ap.add_argument('field', nargs='?',
                     help='dotted path within the run, e.g. extraction.hf_name')
     ap.add_argument('--manifest', default=str(MANIFEST))
+    ap.add_argument('--paths', default=None,
+                    help='paths.yaml holding roots: and predictors: '
+                         '(default: the repository root)')
     ap.add_argument('--path', action='store_true',
                     help='expand {root} placeholders against the roots: block')
     ap.add_argument('--keys', action='store_true', help='list every run key')
@@ -43,7 +47,7 @@ def main():
     ap.add_argument('--default', help='print this instead of failing if absent')
     args = ap.parse_args()
 
-    man = yaml.safe_load(open(args.manifest))
+    man = _manifest.load(args.manifest, args.paths)
 
     if args.keys:
         print(' '.join(man['runs']))

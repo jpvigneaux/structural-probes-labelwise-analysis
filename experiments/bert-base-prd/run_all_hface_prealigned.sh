@@ -14,8 +14,9 @@
 # submit_precompute_alignments.sh, so each probe invocation skips Levenshtein
 # and does only a cheap matmul instead.
 
-source "/path/to/structural-probes-labelwise-analysis/paths.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/paths.sh"
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 EXPERIMENT_DIR="$REPO_ROOT/experiments/bert-base-prd"
 BASE_CONFIG="$EXPERIMENT_DIR/base_config_hface_prealigned.yaml"
 RESULTS_DIR="$EXPERIMENT_DIR/results-hface"

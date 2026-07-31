@@ -9,11 +9,12 @@
 #SBATCH --job-name=train-bert-base-probes  ## When you run squeue -u NETID this is how you can identify the job
 #SBATCH --output=slurm-logs/%x-%j.log  ## submit from experiments/bert-base-prd/
 
-source "/path/to/structural-probes-labelwise-analysis/paths.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/paths.sh"
 
 source "$CONDA_INIT"
 conda activate "$CONDA_ENV"
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 EXPERIMENT_DIR="$REPO_ROOT/experiments/bert-base-prd"
 BASE_CONFIG="$EXPERIMENT_DIR/base_config.yaml"
 RESULTS_DIR="$EXPERIMENT_DIR/results"

@@ -7,10 +7,11 @@
 #SBATCH --time=04:00:00
 #SBATCH --mem=32G
 #SBATCH --job-name=uuas-all-layers
-#SBATCH --output=/path/to/structural-probes-labelwise-analysis/experiments/bert-base-prd/slurm-logs/%x-%j.log  ## submit from experiments/bert-base-prd/
+#SBATCH --output=experiments/bert-base-prd/slurm-logs/%x-%j.log  ## submit from experiments/bert-base-prd/
 
-source "/path/to/structural-probes-labelwise-analysis/paths.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/paths.sh"
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 EXPERIMENT_DIR="$REPO_ROOT/experiments/bert-base-prd"
 cd "$EXPERIMENT_DIR"
 

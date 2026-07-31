@@ -13,8 +13,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-RESULTS_DIR = Path('/path/to/structural-probes-labelwise-analysis/experiments/roberta-shufflen1-prd/results')
-OUT = Path('/path/to/structural-probes-labelwise-analysis/experiments/roberta-shufflen1-prd/figures/selected_uuas_by_relation.png')
+RESULTS_DIR = Path('{REPO_ROOT}/experiments/roberta-shufflen1-prd/results')
+OUT = Path('{REPO_ROOT}/experiments/roberta-shufflen1-prd/figures/selected_uuas_by_relation.png')
 
 # ---------------------------------------------------------------------------
 # Load data — prefer dev.uuas_by_relation, fall back to training TSV

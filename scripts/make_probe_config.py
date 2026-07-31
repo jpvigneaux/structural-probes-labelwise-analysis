@@ -23,12 +23,16 @@ Usage:
 """
 
 import argparse
+import sys
 from pathlib import Path
 
 import yaml
 
 HERE = Path(__file__).resolve().parent
-MANIFEST = HERE.parent / 'experiments' / 'paper_runs.yaml'
+sys.path.insert(0, str(HERE))
+import _manifest                                    # noqa: E402
+
+MANIFEST = _manifest.MANIFEST
 BASE = HERE.parent / 'experiments' / 'bert-base-prd' / 'base_config_hface_prealigned.yaml'
 
 
@@ -44,7 +48,7 @@ def main():
     ap.add_argument('--base-config', default=str(BASE))
     args = ap.parse_args()
 
-    man = yaml.safe_load(open(args.manifest))
+    man = _manifest.load(args.manifest)
     run = man['runs'][args.run]
     ex = run['extraction']
 
