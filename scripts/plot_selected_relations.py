@@ -26,16 +26,42 @@ import pandas as pd
 
 # Same relation subset, colours and markers as the main-text figure, so the
 # appendix panels can be read against it without a per-figure legend lookup.
-RELATIONS = [
-    # External arguments -- red shades
-    ('nsubj', 'nsubj (Ext. Arg)', '#B00000', '-', 's'),
-    ('csubj', 'csubj (Ext. Arg)', '#E06060', '--', 'o'),
-    # Internal arguments -- blue shades
-    ('dobj', 'dobj (Int. Arg)', '#08306B', '-', '^'),
-    ('xcomp', 'xcomp (Int. Arg)', '#2171B5', '--', 'P'),
-    ('iobj', 'iobj (Int. Arg)', '#4292C6', '-.', 'D'),
-    ('pcomp', 'pcomp (Int. Arg)', '#9ECAE1', ':', 'h'),
-]
+# Two relation sets, one per main-text figure. Both were previously separate
+# near-identical scripts; the only thing that differed was this list.
+#
+#   verb-args        the argument-structure figure: external vs internal
+#                    arguments of the verb, coloured by that distinction
+#   performance      the top / intermediate / low figure, with the intermediate
+#                    band split into high, mid and low range
+RELATION_SETS = {
+    'verb-args': [
+        # External arguments -- red shades
+        ('nsubj', 'nsubj (Ext. Arg)', '#B00000', '-', 's'),
+        ('csubj', 'csubj (Ext. Arg)', '#E06060', '--', 'o'),
+        # Internal arguments -- blue shades
+        ('dobj', 'dobj (Int. Arg)', '#08306B', '-', '^'),
+        ('xcomp', 'xcomp (Int. Arg)', '#2171B5', '--', 'P'),
+        ('iobj', 'iobj (Int. Arg)', '#4292C6', '-.', 'D'),
+        ('pcomp', 'pcomp (Int. Arg)', '#9ECAE1', ':', 'h'),
+    ],
+    'performance': [
+        # Top performers -- blue;      marker: circle
+        ('mwe',       'mwe (Top)',          '#08306B', '-',  'o'),
+        ('auxpass',   'auxpass (Top)',      '#6BAED6', '--', 'o'),
+        # Intermediate-high -- purple; marker: triangle-up
+        ('cop',       'cop (Inter-high)',   '#54278F', '-',  '^'),
+        ('amod',      'amod (Inter-high)',  '#B07FD4', '--', '^'),
+        # Intermediate-mid -- orange;  marker: diamond
+        ('cc',        'cc (Inter-mid)',     '#C14B00', '-',  'D'),
+        ('poss',      'poss (Inter-mid)',   '#F5A048', '--', 'D'),
+        # Intermediate-low -- teal;    marker: hexagon
+        ('conj',      'conj (Inter-low)',   '#005F6B', '-',  'h'),
+        ('rcmod',     'rcmod (Inter-low)',  '#40A8BD', '--', 'h'),
+        # Low performers -- green;     marker: square
+        ('advcl',     'advcl (Low)',        '#1A6B22', '-',  's'),
+        ('parataxis', 'parataxis (Low)',    '#5EC466', '--', 's'),
+    ],
+}
 
 
 def load(results_dir):
@@ -63,6 +89,9 @@ def main():
     ap.add_argument('--results-dir', required=True)
     ap.add_argument('--out', required=True)
     ap.add_argument('--model-label', default='checkpoint')
+    ap.add_argument('--relation-set', default='verb-args',
+                    choices=sorted(RELATION_SETS),
+                    help='which set of relations to draw (default: verb-args)')
     ap.add_argument('--tick-step', type=int, default=None,
                     help='x-tick spacing; default adapts to the checkpoint count')
     args = ap.parse_args()
@@ -72,7 +101,7 @@ def main():
     step = args.tick_step or max(1, round((layers[-1] - layers[0]) / 12))
 
     fig, ax = plt.subplots(figsize=(5.5, 4.6))
-    for rel, label, color, ls, marker in RELATIONS:
+    for rel, label, color, ls, marker in RELATION_SETS[args.relation_set]:
         sub = data[data['relation'] == rel].sort_values('layer')
         if sub.empty:
             print(f'WARNING: no data for {rel}')
