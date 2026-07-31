@@ -18,7 +18,7 @@ import Levenshtein as _lev_mod
 
 # ---------------------------------------------------------------------------
 # Module-level alignment utilities
-# Defined here so that scripts/precompute_alignments.py can import them
+# Defined here so that scripts/precompute_alignments_hf.py can import them
 # directly without duplicating code.
 # ---------------------------------------------------------------------------
 
@@ -616,7 +616,7 @@ class BERTDataset(SubwordDataset):
     alignment_method = self.args['model'].get('alignment')
 
     if alignment_method == 'pre-aligned':
-      # Alignment was pre-computed by scripts/precompute_alignments.py.
+      # Alignment was pre-computed by scripts/precompute_alignments_hf.py.
       # Each sentence key holds align_mat of shape (n_sub-2, n_words); no
       # tokeniser or Levenshtein work needed here — just a matmul per sentence.
       print(f'Loading pre-computed alignments from {alignment_path}')

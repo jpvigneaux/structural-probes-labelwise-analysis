@@ -86,7 +86,7 @@ Not every run uses the same one, and the choice renumbers the checkpoints:
 
 | run | extractor | layout | checkpoints | "checkpoint 9" means |
 | --- | --- | --- | --- | --- |
-| BERT-base | `convert_raw_to_hf_all_checkpoints.py` | `2+2L` | 26 | post-block of block 4 |
+| BERT-base | `convert_raw_to_bert_natural_sentences.py` | `2+2L` | 26 | post-block of block 4 |
 | ModernBERT-base | `convert_raw_to_hf_all_checkpoints.py` | `2+2L` | 46 | post-block of block 4 |
 | GPT-2-base | `convert_raw_to_hf_all_checkpoints.py` | `2+2L` | 26 | post-block of block 4 |
 | GPT-J-6B | `convert_raw_to_hf_all_checkpoints.py --allow-missing-midblock` | `1+L` | 29 | post-block of block 9 |
@@ -105,8 +105,9 @@ python scripts/check_extractor_equivalence.py --model microsoft/deberta-v3-base 
 It runs all three scripts end to end and compares `B[2k+1]` against
 `hidden_states[k+1]`. Over 520 checkpoint comparisons the largest disagreement is
 `5.7e-06` for both DeBERTa-v3-base and RoBERTa-base — float32 storage plus one
-recomputed LayerNorm. So neither layout is privileged, and `convert_raw_to_hf_-
-natural_sentences.py` is now restricted to post-LayerNorm encoders, because for a
+recomputed LayerNorm. So neither layout is privileged, and
+`convert_raw_to_hf_natural_sentences.py` is now restricted to post-LayerNorm
+encoders, because for a
 pre-LayerNorm model HuggingFace applies the final norm to `hidden_states[-1]` and
 to no other entry, which would put the last checkpoint in a different space from
 its neighbours.
@@ -202,7 +203,7 @@ The individual scripts, which is what those drivers call. Three inputs, all on P
 ```bash
 # (a) arc-length moments per relation: mean_length, mean_log_length,
 #     stdev_log_length and skew_log_length -- location, dispersion, asymmetry
-python scripts/regression/ud_dep_length.py \
+python scripts/regression/arc_length_moments.py \
     $DATA_DIR/ptb3-wsj-train.conllx --output dep-lengths-ptb.tsv
 
 # (b) similarity-corrected entropy per relation
@@ -276,10 +277,11 @@ Corpus statistics are computed on **PTB train**: entropy estimates on the
 1.7k-sentence dev split would be badly biased, and using train keeps the
 predictors independent of the split the ULAS is measured on.
 
-### Why `contextual_sim_entropy.py` replaces the older pipeline
+### Why the entropy predictor is computed the way it is
 
-The original route (`fasttext_similarity_sparse.py` → `ud_dep_stats.py`) is kept
-here for reference, but is superseded on two counts:
+An earlier version of this analysis built the similarity-corrected entropy from
+one global sparse similarity matrix. That route is not shipped here, having been
+superseded on two counts:
 
 - **Memory.** It materialises one sparse-matrix entry per within-relation word
   pair. On PTB-train that is 756 million pairs (~23 GB) and OOMs; the
@@ -290,8 +292,9 @@ here for reference, but is superseded on two counts:
   replacement uses an exact eigendecomposition of the `d × d` covariance (cheap
   at `d ≈ 300`) with a fixed sign convention.
 
-The entropy mathematics is otherwise identical: with PCA disabled the two agree
-to `1e-6`, i.e. to the printed precision.
+The entropy mathematics is unchanged: with PCA disabled the two routes agreed
+to `1e-6`, i.e. to the printed precision, which is why replacing one with the
+other did not move any published number.
 
 ---
 

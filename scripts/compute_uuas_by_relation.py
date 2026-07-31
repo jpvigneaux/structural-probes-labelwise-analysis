@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compute per-relation UUAS (ULAS) on dev and test for trained probe checkpoints.
 
-Generalised from experiments/bert-base-prd/compute_uuas_by_relation_dev_test.py:
+Generalised from an earlier BERT-only version:
 that version hard-coded BERT-base's results directory and config filename, so it
 could not be pointed at the other models. Here the results directory and the
 checkpoint list are arguments, and the per-checkpoint YAML is discovered by glob,

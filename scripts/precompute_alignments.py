@@ -1,4 +1,18 @@
-'''
+'''HISTORICAL: this script produced the archived BERT-base alignment matrices.
+
+Kept because it is the code of record for a released artifact: the alignments
+under Alignments/Natural_sentences/BERTBase/, which the paper's BERT-base run
+was trained against, were written by this script (via repro-full/align_bert.sh).
+
+For anything new, use precompute_alignments_hf.py. It is model-agnostic where
+this one hardcodes BERT's [CLS]/[SEP] and infers the tokenizer from a
+'base'/'large' flag, and it records the special-token counts on the output file.
+It also reproduces this script's output exactly: regenerating all three splits
+with `--model-name bert-base-cased` gives matrices identical to the archived
+ones on 1700/1700 dev sentences, to a maximum absolute difference of 8.9e-08,
+which is float32 rounding. Nothing depends on which of the two was used.
+
+
 Pre-compute hface-deptb alignment matrices for BERT natural-sentence HDF5 files.
 
 Alignment is a property of (PTB tokens, tokeniser) only — it does not depend on

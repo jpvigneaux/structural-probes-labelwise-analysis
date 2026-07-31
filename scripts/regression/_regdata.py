@@ -55,7 +55,7 @@ def load_regression_frame(uuas_path, sim_path, len_path, columns=None):
                if c not in length.columns]
     if missing:
         raise SystemExit(f'{len_path} lacks {missing}; re-run '
-                         f'scripts/regression/ud_dep_length.py to regenerate it.')
+                         f'scripts/regression/arc_length_moments.py to regenerate it.')
 
     common = uuas.index.intersection(sim.index).intersection(length.index)
     if len(common) == 0:

@@ -1,3 +1,14 @@
+> **Note for this repository.** What follows is the upstream README of
+> [structural-probes](https://github.com/john-hewitt/structural-probes) by John
+> Hewitt, kept for attribution and reference. It describes that project's own
+> workflow, some of which this reproduction package does not use: the ELMo and
+> Universal Dependencies paths, the demo scripts, and `scripts/convert_raw_to_bert.py`
+> / `scripts/convert_raw_to_elmo.sh` were removed here as unused. See
+> [README.md](README.md) and [REPRODUCING.md](REPRODUCING.md) for what this
+> repository actually runs.
+
+---
+
 <p align="center">
   <img src="doc-assets/header.png" width="550" title="hover text" alt="A vector space and a parse tree representing the same info.">
 </p>

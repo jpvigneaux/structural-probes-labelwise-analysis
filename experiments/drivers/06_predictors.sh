@@ -44,13 +44,15 @@ mkdir -p "$OUT"
 echo "=== dependency-length moments per relation ==="
 # Writes mean_length, mean_log_length, stdev_log_length and skew_log_length:
 # the location, dispersion and asymmetry terms of the moment ladder.
-$PYTHON "$REPO/scripts/regression/ud_dep_length.py" "$PTB" \
+$PYTHON "$REPO/scripts/regression/arc_length_moments.py" "$PTB" \
   --output "$OUT/dep-lengths-ptb.tsv"
 
 echo "=== similarity-corrected head entropy, static fastText space ==="
-# contextual_sim_entropy.py, not the older fasttext_similarity_sparse.py ->
-# ud_dep_stats.py route: that one materialises 756M sparse pair entries and
-# OOMs, and its randomized-SVD PCA shifts entropies by ~0.03 bits between runs.
+# The earlier route built one global sparse matrix with an entry per
+# within-relation word pair -- 756M of them on PTB train, which OOMs -- and its
+# randomized-SVD PCA shifted entropies by ~0.03 bits between runs. This computes
+# cosines in row chunks of a dense per-relation block, with an exact
+# eigendecomposition, so it is both tractable and deterministic.
 $PYTHON "$REPO/scripts/regression/contextual_sim_entropy.py" "$PTB" \
   --out "$OUT/sim_static_fasttext.tsv" --vec "$VEC" --pca-dim 50
 

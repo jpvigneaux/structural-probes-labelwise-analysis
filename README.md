@@ -86,21 +86,50 @@ reproduce **without** any external data.
 ### 1. Figures from bundled results (no GPU, no external data)
 
 The saved probe outputs (`results-hface/`, roberta `results/`) and the curve
-`.npz` are included, so most figures regenerate directly:
+`.npz` are included, so the BERT-base figures regenerate directly. Everything
+downstream of the `.npz` needs neither the corpus nor a GPU:
 
 ```bash
 PY=/path/to/conda/envs/sp-env/bin/python   # or your own sp-env python
-cd experiments/bert-base-prd
+B=experiments/bert-base-prd
+NPZ=$B/figures/uuas_mean_curves_convB.npz          # the run of record
+HEATMAP_NPZ=$B/figures/uuas_mean_curves_by_checkpoint.npz  # fig:R2-log-distance-model
 
-$PY figures/plot_selected_relations.py            # Fig 1
-$PY figures/plot_selected_relations_2.py          # Fig 2
-$PY cluster_relations_by_distance.py              # Fig 8 (four-panel)
-$PY cluster_relations_by_distance.py --alpha 1.0 --out figures/relation_clustering_1panel.png  # Fig 6
-$PY regression_uas_vs_log_distance.py             # Fig 5
+# fig:dependencies1, fig:dependencies2
+$PY scripts/plot_selected_relations.py --results-dir $B/results-convB \
+    --out $B/figures/selected_uuas_by_relation.png --model-label "BERT-base"
 
-cd ../roberta-shufflen1-prd
-$PY figures/plot_selected_relations.py            # Fig 3
+# fig:R2-log-distance-model
+$PY scripts/figures/regression_uas_vs_log_distance.py --curves $HEATMAP_NPZ
+
+# fig:ULAS-only-dendrogram, then fig:dendrogram_relations (four panels over alpha)
+$PY scripts/figures/cluster_relations_by_distance.py --curves $NPZ --alpha 1.0 \
+    --out $B/figures/relation_clustering_1panel.png
+$PY scripts/figures/cluster_relations_by_distance.py --curves $NPZ \
+    --out $B/figures/relation_clustering_4panel.png
+
+# fig:dependencies-shuffled
+$PY scripts/plot_selected_relations.py \
+    --results-dir experiments/roberta-shufflen1-prd/results \
+    --out experiments/roberta-shufflen1-prd/figures/selected_uuas_by_relation.png \
+    --model-label "RoBERTa-Shuffle-n1"
 ```
+
+Every script lives under `scripts/`; `experiments/` holds only the manifest, the
+drivers, and saved outputs. There is one copy of each analysis, not two.
+
+**Two BERT-base runs are bundled, and the paper uses both.** They differ in the
+LayerNorm convention, hence in peak ULAS, so it matters which figure came from
+which:
+
+| bundled run | peak dev ULAS | what the paper takes from it |
+|---|---|---|
+| `results-convB` | 0.815 | `tab:regression_results`, the BERT-base row of `tab:other-models`, and the figures above — the run of record |
+| `results-hface` | 0.812 | `fig:R2-log-distance-model` only, whose 13 columns are the post-block checkpoints **plus checkpoint 16**; `results-convB`'s curve NPZ covers the 12 post-block ones |
+
+`figures/uuas_mean_curves_by_checkpoint.npz` belongs to `results-hface` and
+`figures/uuas_mean_curves_convB.npz` to `results-convB`; the commands above use
+whichever the paper used.
 
 ### 2. Full reproduction from scratch (SLURM + external data)
 
@@ -199,7 +228,7 @@ then post-attention and post-block residual streams for each of 12 blocks) using
 `transformer_lens.HookedEncoder`. Subword vectors are pooled back to PTB tokens
 with `data.hface_alignment_deptb`, a two-step character-level Levenshtein
 alignment (subwords → natural string → PTB string), precomputed by
-`scripts/precompute_alignments.py`.
+`scripts/precompute_alignments_hf.py`.
 
 ## External data (not included)
 
@@ -226,29 +255,34 @@ Too large to bundle; needed only for full reproduction (level 2):
 
 ```
 structural-probes-labelwise-analysis/
-├── structural-probes/     # Bundled upstream Hewitt & Manning library
-├── scripts/               # Embedding extraction, alignment, PTB prep, checks
-│   ├── regression/               # The WLS regression and its model comparisons
-│   ├── figures/                  # Curves, R² heat maps, dendrograms
-│   ├── check_embeddings.py       # Embeddings + alignments vs the manifest
-│   ├── check_extractor_equivalence.py   # The 1+L and 2+2L paths agree
-│   ├── make_probe_config.py      # One probe config, from the manifest
-│   └── verify_paper_numbers.py   # Every published number vs the code
-├── experiments/
-│   ├── paper_runs.yaml           # The six runs, and what the paper claims for each
-│   ├── drivers/                  # One SLURM script per pipeline stage
-│   ├── bert-base-prd/            # BERT-base probes, ULAS, distance/cluster analysis
-│   │   ├── results-hface/        # Saved probe outputs (26 checkpoints)
-│   │   ├── figures/              # Generators + rendered paper figures
-│   │   ├── tables/               # Regression / range CSV+HTML
-│   └── roberta-shufflen1-prd/    # RoBERTa-Shuffle-N1 probes
-├── scripts/_manifest.py   # Joins paper_runs.yaml with your local paths.yaml
-├── paths.yaml.template    # Copy to paths.yaml (git-ignored) and fill in
-├── paths.sh.template      # Copy to paths.sh   (git-ignored) and fill in
+├── scripts/                      # Every analysis, one copy of each
+│   ├── convert_raw_to_*.py       #   extraction, one per model family
+│   ├── precompute_alignments_hf.py   # subword -> PTB alignment, any tokenizer
+│   ├── apply_consuming_layernorm.py  # LayerNorm convention A -> B
+│   ├── compute_uuas_by_relation.py   # per-relation ULAS
+│   ├── make_probe_config.py      #   one probe config, from the manifest
+│   ├── regression/               #   the WLS regression and its comparisons
+│   ├── figures/                  #   curves, R² heat maps, dendrograms
+│   ├── check_embeddings.py       #   embeddings + alignments vs the manifest
+│   ├── check_extractor_equivalence.py  # the 1+L and 2+2L paths agree
+│   ├── verify_paper_numbers.py   #   every published number vs the code
+│   └── _manifest.py              #   joins paper_runs.yaml with paths.yaml
+├── experiments/                  # The manifest, the drivers, saved outputs
+│   ├── paper_runs.yaml           #   the six runs, and what the paper claims
+│   ├── drivers/                  #   one SLURM script per pipeline stage
+│   ├── bert-base-prd/            #   BERT-base probe outputs and figures
+│   └── roberta-shufflen1-prd/    #   RoBERTa-Shuffle-n1 probe outputs
+├── structural-probes/            # Vendored upstream library (Apache 2.0)
+├── paths.yaml.template           # Copy to paths.yaml (git-ignored), fill in
+├── paths.sh.template             # Copy to paths.sh   (git-ignored), fill in
 ├── requirements.txt
-├── LICENSE                # Apache 2.0
-└── UPSTREAM_README.md     # Original structural-probes README
+├── LICENSE                       # Apache 2.0
+└── UPSTREAM_README.md            # Original structural-probes README
 ```
+
+The split is the organising rule: **`scripts/` is code, `experiments/` is data.**
+No analysis exists in two places, and nothing under `experiments/` is executable
+except the drivers.
 
 ---
 
