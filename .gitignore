@@ -17,6 +17,8 @@ slurm-logs/
 paths.yaml
 paths.sh
 
-# Dependency-tree renderings written by structural-probes/reporter.py. They
-# embed PTB sentence text, which is LDC-licensed and not ours to redistribute.
+# PTB-derived text. LDC-licensed and not ours to redistribute, but useful to
+# keep locally: sentences.txt is the extractors' input, and reporter.py writes
+# the .tikz dependency renderings on every probe run.
+experiments/*/data/sentences.txt
 *.tikz
