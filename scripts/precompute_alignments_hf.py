@@ -1,8 +1,8 @@
 '''Precompute subword->PTB alignment matrices for ANY HuggingFace encoder.
 
-Generalises precompute_alignments.py (which hardcodes BERT's [CLS]/[SEP] and
-guesses the tokenizer from a 'base'/'large' flag) so that every model -- BERT,
-RoBERTa, DeBERTa-v3, ModernBERT -- is aligned by exactly the same rule:
+Every model -- BERT, RoBERTa, DeBERTa-v3, ModernBERT, GPT-2, GPT-J -- is
+aligned by exactly the same rule, rather than by a BERT-specific one that
+hardcodes [CLS]/[SEP] and guesses the tokenizer from a 'base'/'large' flag:
 
   1. de-PTBify the sentence with data.natural_sentence, giving the string the
      model is actually fed (this is our variation on Hewitt & Manning, who feed

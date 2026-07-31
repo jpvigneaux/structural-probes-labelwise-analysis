@@ -27,7 +27,10 @@ runs:
     extraction:
       hf_name: bert-base-cased
       family: post_ln            # BERT-style encoder
-      extractor: convert_raw_to_hf_all_checkpoints.py
+      # transformer_lens with folded LayerNorm, which stores the same
+      # pre-LayerNorm accumulator convert_raw_to_hf_all_checkpoints.py does;
+      # that script reproduces this run and is what a fresh extraction uses.
+      extractor: convert_raw_to_bert_natural_sentences.py
       layout: 2+2L               # 26 checkpoints for 12 blocks
       n_checkpoints: 26
       layernorm_convention: B    # apply_consuming_layernorm.py; see REPRODUCING.md S.1

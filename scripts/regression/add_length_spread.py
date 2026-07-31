@@ -49,7 +49,7 @@ def load(uuas_path, sim_path, len_path):
     length = pd.read_csv(len_path, sep='\t').set_index('deprel')
     for col in ('stdev_log_length', 'skew_log_length'):
         if col not in length.columns:
-            raise SystemExit(f'length file lacks {col}; re-run ud_dep_length.py')
+            raise SystemExit(f'length file lacks {col}; re-run arc_length_moments.py')
 
     common = uuas.index.intersection(sim.index).intersection(length.index)
     return pd.DataFrame({

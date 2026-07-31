@@ -33,13 +33,13 @@ exactly the probe's input space.
 
 Entropy
 -------
-Matches the published definition (and ud_dep_stats.py's implementation):
+Matches the published definition:
 
     q(x)      = sum_y max(cos(x,y), 0) * p(y)        [diagonal term is p(x)]
     H_sim(r)  = -sum_x p(x) * log2 q(x)
 
 q is computed in row chunks of a dense per-relation cosine matrix. The sparse
-global-matrix approach in fasttext_similarity_sparse.py needs one entry per
+earlier global-matrix approach needed one entry per
 within-relation word pair, which on PTB-train is 756 million pairs (~23 GB) and
 OOMs; chunking never materialises more than `--chunk` rows at a time.
 
@@ -162,7 +162,7 @@ def type_vectors_static(vec_path, needed, lowercase):
 def pca_reduce(mat, n_components):
     """Exact PCA by eigendecomposition of the d x d covariance matrix.
 
-    fasttext_similarity_sparse.py uses sklearn's randomized_svd, which is an
+    The earlier implementation used sklearn's randomized_svd, which is an
     approximation: its basis depends on the random projection and on row order,
     so entropies shift by ~0.03 bits between runs on the same data (verified
     against this implementation -- with PCA disabled the two agree to 1e-6, i.e.

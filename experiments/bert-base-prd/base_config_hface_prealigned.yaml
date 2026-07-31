@@ -28,7 +28,7 @@ model:
   model_type: BERT-disk
   hf_model_name: bert-base-cased  # tokenizer that produced the embeddings (no hidden_dim guessing)
   use_disk: True
-  model_layer: 3  # overridden per-layer by run_all_hface_prealigned.sh
+  model_layer: 3  # overridden per-layer by scripts/make_probe_config.py
   alignment: pre-aligned
   alignment_root: PLACEHOLDER  # set from paths.sh at submit time
   alignment_train_path: alignments.train.hdf5

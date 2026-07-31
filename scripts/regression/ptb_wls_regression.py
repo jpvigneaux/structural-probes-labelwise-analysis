@@ -107,7 +107,7 @@ def main():
     if not args.no_sd:
         if "stdev_log_length" not in length.columns:
             print("Error: -len file lacks stdev_log_length; re-run "
-                  "ud_dep_length.py, or pass --no-sd.", file=sys.stderr)
+                  "arc_length_moments.py, or pass --no-sd.", file=sys.stderr)
             sys.exit(1)
         df["sd_log_length"] = length.loc[common, "stdev_log_length"]
         predictors.append("sd_log_length")
