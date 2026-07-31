@@ -205,7 +205,10 @@ alignment (subwords → natural string → PTB string), precomputed by
 
 Too large to bundle; needed only for full reproduction (level 2):
 
-- **PTB-WSJ** dependency parses (CoNLL-X). Requires an unmodified PTB3 license.
+- **PTB-WSJ** dependency parses (CoNLL-X). Requires an unmodified PTB3 licence.
+  No PTB text is bundled here, in any form: the corpus is LDC-licensed and not
+  ours to redistribute. `scripts/convert_conll_to_raw.py` regenerates the
+  de-PTBified sentences the extractors consume, from your own copy.
 - **Natural-sentence embeddings** for the six runs (HDF5; 13 to 46 checkpoints
   per sentence depending on the model, and 4096-dimensional for GPT-J).
 - **RoBERTa-Shuffle-N1** fairseq checkpoint (Sinha et al., EMNLP 2021), which
@@ -238,7 +241,6 @@ structural-probes-labelwise-analysis/
 │   │   ├── results-hface/        # Saved probe outputs (26 checkpoints)
 │   │   ├── figures/              # Generators + rendered paper figures
 │   │   ├── tables/               # Regression / range CSV+HTML
-│   │   └── data/sentences.txt    # De-PTBified natural sentences (embedding input)
 │   └── roberta-shufflen1-prd/    # RoBERTa-Shuffle-N1 probes
 ├── scripts/_manifest.py   # Joins paper_runs.yaml with your local paths.yaml
 ├── paths.yaml.template    # Copy to paths.yaml (git-ignored) and fill in

@@ -16,3 +16,7 @@ slurm-logs/
 # Machine-local paths. Copy the .template files and edit; never commit these.
 paths.yaml
 paths.sh
+
+# Dependency-tree renderings written by structural-probes/reporter.py. They
+# embed PTB sentence text, which is LDC-licensed and not ours to redistribute.
+*.tikz
