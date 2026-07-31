@@ -39,7 +39,7 @@ for layer in range(16,26):
         time=datetime.timedelta(hours=1),
         mem="8G",
         job_name=f"bert-nat-layer{layer}",
-        output=fr'''/path/to/structural-probes-labelwise-analysis/experiments/bert-base-prd/slurm-logs/%x-%j.log'''
+        output=fr'''{REPO_ROOT}/experiments/bert-base-prd/slurm-logs/%x-%j.log'''
     )
     slurm.set_shell("/bin/bash")
     slurm.add_cmd(r"echo $(date '+%Y-%m-%d %H:%M:%S')")

@@ -40,9 +40,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
-import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / 'regression'))
+import _manifest                                    # noqa: E402
 from _regdata import load_regression_frame          # noqa: E402
 
 BASE = ['head_sim_entropy', 'mean_log_length']
@@ -231,8 +231,9 @@ def verify_run(key, run, roots, predictors, rep, verbose):
 
 def main():
     ap = argparse.ArgumentParser()
-    here = Path(__file__).resolve().parent.parent
-    ap.add_argument('--manifest', default=str(here / 'experiments' / 'paper_runs.yaml'))
+    ap.add_argument('--manifest', default=None)
+    ap.add_argument('--paths', default=None,
+                    help='paths.yaml holding roots: and predictors:')
     ap.add_argument('--only', action='append', help='verify only these run keys')
     ap.add_argument('--slack', type=int, default=0,
                     help='admit N further units in the last printed digit')
@@ -240,7 +241,7 @@ def main():
                     help='also print the full WLS summary for each run')
     args = ap.parse_args()
 
-    man = yaml.safe_load(open(args.manifest))
+    man = _manifest.load(args.manifest, args.paths)
     roots, predictors = man['roots'], man['predictors']
     rep = Report(args.slack)
 

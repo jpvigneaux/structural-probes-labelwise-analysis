@@ -12,3 +12,7 @@ slurm-logs/
 
 # Large / external data (kept outside the repo)
 *.hdf5
+
+# Machine-local paths. Copy the .template files and edit; never commit these.
+paths.yaml
+paths.sh

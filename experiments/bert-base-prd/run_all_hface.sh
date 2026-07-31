@@ -7,7 +7,7 @@
 #SBATCH --time=08:00:00
 #SBATCH --mem=8G
 #SBATCH --job-name=train-bert-base-probes-hface
-#SBATCH --output=/path/to/structural-probes-labelwise-analysis/experiments/bert-base-prd/slurm-logs/%x-%j.log  ## submit from experiments/bert-base-prd/
+#SBATCH --output=experiments/bert-base-prd/slurm-logs/%x-%j.log  ## submit from experiments/bert-base-prd/
 
 
 # Train parse-distance probes on de-PTBified BERT-base embeddings with hface-deptb alignment.
@@ -20,8 +20,9 @@
 #
 # Each probe writes results to results-hface/layer-XX/ where XX = HDF5 index (00..25).
 
-source "/path/to/structural-probes-labelwise-analysis/paths.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/paths.sh"
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 EXPERIMENT_DIR="$REPO_ROOT/experiments/bert-base-prd"
 BASE_CONFIG="$EXPERIMENT_DIR/base_config_hface.yaml"
 RESULTS_DIR="$EXPERIMENT_DIR/results-hface"

@@ -7,14 +7,15 @@
 #SBATCH --time=08:00:00
 #SBATCH --mem=16G
 #SBATCH --job-name=bert-natural-emb
-#SBATCH --output=/path/to/structural-probes-labelwise-analysis/experiments/bert-base-prd/slurm-logs/%x-%j.log  ## submit from experiments/bert-base-prd/
+#SBATCH --output=experiments/bert-base-prd/slurm-logs/%x-%j.log  ## submit from experiments/bert-base-prd/
 
-source "/path/to/structural-probes-labelwise-analysis/paths.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/paths.sh"
 
 mkdir -p "$EMB_DIR_BERT_BASE_NATURAL"
 
 for SPLIT in train dev test; do
     echo "=== Extracting $SPLIT ==="
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
     $PYTHON "$REPO_ROOT/scripts/convert_raw_to_bert_natural_sentences.py" \
         "$DATA_DIR/ptb3-wsj-${SPLIT}.conllx" \
         "$EMB_DIR_BERT_BASE_NATURAL/raw.${SPLIT}.bertbase-natural-layers.hdf5" \

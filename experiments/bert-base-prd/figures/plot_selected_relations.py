@@ -8,8 +8,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-RESULTS_DIR = Path('/path/to/structural-probes-labelwise-analysis/experiments/bert-base-prd/results-hface')
-OUT = Path('/path/to/structural-probes-labelwise-analysis/experiments/bert-base-prd/figures/selected_uuas_by_relation.png')
+RESULTS_DIR = Path('{REPO_ROOT}/experiments/bert-base-prd/results-hface')
+OUT = Path('{REPO_ROOT}/experiments/bert-base-prd/figures/selected_uuas_by_relation.png')
 
 # ---------------------------------------------------------------------------
 # Load data (mirrors plot_optimal_uuas_by_relation_and_layer.py logic)

@@ -6,14 +6,15 @@
 #SBATCH --time=02:00:00
 #SBATCH --mem=8G
 #SBATCH --job-name=uuas-relation-dev-test
-#SBATCH --output=/path/to/structural-probes-labelwise-analysis/experiments/bert-base-prd/slurm-logs/%x-%j.log
+#SBATCH --output=experiments/bert-base-prd/slurm-logs/%x-%j.log
 
 # Computes dev.uuas_by_relation and test.uuas_by_relation for all 26 layers.
 # Loads only dev+test embeddings (skips 39k-sentence train) and handles
 # GPU-saved probe params on a CPU-only node via map_location='cpu'.
 
-source "/path/to/structural-probes-labelwise-analysis/paths.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/paths.sh"
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 EXPERIMENT_DIR="$REPO_ROOT/experiments/bert-base-prd"
 export PYTHONPATH="$REPO_ROOT/structural-probes"
 

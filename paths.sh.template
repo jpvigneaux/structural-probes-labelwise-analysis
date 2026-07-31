@@ -1,0 +1,35 @@
+#!/bin/bash
+# Machine-local paths, shell twin of paths.yaml. Copy to paths.sh and edit;
+# paths.sh is git-ignored. Keep the two files in sync -- shell scripts source
+# this one, Python reads the YAML.
+#
+#     cp paths.sh.template paths.sh
+#
+# The drivers in experiments/drivers/ source this and then read everything
+# else from experiments/paper_runs.yaml, so a path belongs here or nowhere.
+
+# Absolute path to the Python interpreter in your environment. Use the explicit
+# interpreter rather than `conda activate`, which is unreliable under SLURM.
+PYTHON=/path/to/conda/envs/sp-env/bin/python
+
+# The cluster's system libstdc++ may be older than numpy/torch require.
+# Prepending the environment's own lib directory finds the right version first.
+export LD_LIBRARY_PATH=/path/to/conda/envs/sp-env/lib:${LD_LIBRARY_PATH:-}
+
+# Conda initialisation script and environment name, for scripts that activate
+# conda rather than calling the interpreter directly.
+CONDA_INIT=/path/to/mamba/etc/profile.d/conda.sh
+CONDA_ENV=sp-env
+
+# PTB3-WSJ CoNLL-X splits: ptb3-wsj-{train,dev,test}.conllx
+DATA_DIR=/path/to/training-data/
+
+# HuggingFace cache. Compute nodes are usually offline, so extraction jobs run
+# with HF_HUB_OFFLINE=1 and resolve models from here. Populate it from a node
+# with internet using scripts/predownload_models.py, and point it at a directory
+# you own: a shared cache with 0-byte blobs fails with a JSON decode error that
+# looks nothing like a caching problem. Note that transformer_lens resolves
+# bert-base-cased to its canonical id google-bert/bert-base-cased; the
+# predownload script fetches both.
+export HF_HOME=/path/to/scratch/hf-cache
+export HF_HUB_OFFLINE=1

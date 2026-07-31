@@ -35,10 +35,12 @@ from pathlib import Path
 
 import h5py
 import numpy as np
-import yaml
 
 HERE = Path(__file__).resolve().parent
-MANIFEST = HERE.parent / 'experiments' / 'paper_runs.yaml'
+sys.path.insert(0, str(HERE))
+import _manifest                                    # noqa: E402
+
+MANIFEST = _manifest.MANIFEST
 
 
 def read_conllx_sentences(path):
@@ -74,7 +76,9 @@ class Checks:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--run', required=True)
-    ap.add_argument('--manifest', default=str(MANIFEST))
+    ap.add_argument('--manifest', default=None)
+    ap.add_argument('--paths', default=None,
+                    help='paths.yaml holding roots:')
     ap.add_argument('--splits', nargs='+', default=['train', 'dev', 'test'])
     ap.add_argument('--max-sentences', type=int, default=0,
                     help='check only the first N sentences of each split (0 = all)')
@@ -83,7 +87,7 @@ def main():
                          'counts it produces (needs the model available offline)')
     args = ap.parse_args()
 
-    man = yaml.safe_load(open(args.manifest))
+    man = _manifest.load(args.manifest, args.paths)
     if args.run not in man['runs']:
         sys.exit(f"unknown run '{args.run}'; known: {' '.join(man['runs'])}")
     run, roots = man['runs'][args.run], man['roots']
