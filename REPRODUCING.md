@@ -352,9 +352,10 @@ python scripts/figures/regression_uas_vs_log_distance.py --curves curves.npz
 # the same heat map restricted to named relations, and the data behind it: one
 # panel per relation at a single checkpoint, with the fitted line and its R^2
 python scripts/figures/regression_uas_vs_log_distance.py --curves curves.npz \
-    --relations det ccomp neg cop aux vmod cc advcl --out r2_heatmap_main.png
+    --relations det ccomp neg cop aux vmod cc advcl nsubj dobj xcomp pcomp auxpass amod poss conj rcmod parataxis --out r2_heatmap_main.png
 python scripts/figures/ulas_vs_log_distance_curves.py --curves curves_ck16.npz \
-    --checkpoint 16 --relations det ccomp neg cop aux vmod cc advcl \
+    --checkpoint 16 --relations $RELS --ncols 5 --figsize 6.30,5.15 \
+    --title-font 7.0 --label-font 7.0 --tick-font 5.8 --marker-size 6 --dpi 400 \
     --model-label "BERT-base" --out ulas_vs_log_distance_ck16.png
 
 python scripts/figures/cluster_relations_by_distance.py --curves curves.npz \
