@@ -41,7 +41,8 @@ anything.
 | `fig:R2-log-distance-model` — R² heat map, log-linear decay | [`scripts/figures/regression_uas_vs_log_distance.py`](scripts/figures/regression_uas_vs_log_distance.py) `--relations` |
 | `fig:ulas-vs-log-distance` — the data behind it, at checkpoint 16 | [`scripts/figures/ulas_vs_log_distance_curves.py`](scripts/figures/ulas_vs_log_distance_curves.py) |
 | `fig:ULAS-only-dendrogram` — relation dendrogram, α = 1 | [`scripts/figures/cluster_relations_by_distance.py`](scripts/figures/cluster_relations_by_distance.py) `--alpha 1.0` |
-| `fig:head-sim-entropy` — ULAS vs head entropy, BERT-base | [`scripts/plot_predictor_grid.py`](scripts/plot_predictor_grid.py) `--panel head_sim_entropy` |
+| `fig:head-sim-entropy` — held-out ULAS vs head entropy, BERT-base | [`scripts/plot_predictor_grid.py`](scripts/plot_predictor_grid.py) `--panel head_sim_entropy --ulas test` |
+| held-out R² and leave-one-relation-out Q² (§Entropy analysis) | [`scripts/regression/holdout_predictivity.py`](scripts/regression/holdout_predictivity.py) |
 | `tab:regression_results` — the three-predictor WLS regression | [`scripts/regression/ptb_wls_regression.py`](scripts/regression/ptb_wls_regression.py) |
 
 ### Appendices
@@ -52,7 +53,7 @@ anything.
 | `fig:dendrogram_relations`, `fig:dendrogram_w1` — four-panel dendrograms over α | same, `--range-metric p90` / `w1` |
 | `tab:other-models` — the regression, repeated on five models | [`scripts/regression/ptb_wls_regression.py`](scripts/regression/ptb_wls_regression.py) per run |
 | `fig:app-selected`, `fig:app-curves`, `fig:app-r2a`, `fig:app-r2b`, `fig:app-dendro` | [`experiments/drivers/08_figures.sh`](experiments/drivers/08_figures.sh) per run |
-| `fig:predictor-grid` — predictors against ULAS | [`scripts/plot_predictor_grid.py`](scripts/plot_predictor_grid.py) |
+| `fig:predictor-grid` — predictors against held-out ULAS | [`scripts/plot_predictor_grid.py`](scripts/plot_predictor_grid.py) `--ulas test` |
 | `tab:moment-ladder` — does dispersion or skew pay for itself? | [`scripts/regression/add_length_spread.py`](scripts/regression/add_length_spread.py) |
 | sd vs variance (Appendix "Standard deviation, not variance") | [`scripts/regression/compare_dispersion_scale.py`](scripts/regression/compare_dispersion_scale.py) |
 | mean(log n) vs log(mean n) (same appendix) | [`scripts/regression/compare_length_predictors.py`](scripts/regression/compare_length_predictors.py) |

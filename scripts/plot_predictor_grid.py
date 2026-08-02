@@ -67,15 +67,28 @@ def weighted_fit(x, y, w):
     return slope, ym - slope * xm, sxy / np.sqrt(sxx * syy)
 
 
-def wls_resid(y, X, w):
-    """Residuals of a weighted least-squares fit of y on X (intercept added)."""
+def wls_beta(y, X, w):
+    """Weighted least-squares coefficients of y on X, intercept first."""
     A = np.column_stack([np.ones(len(y)), X])
     sw = np.sqrt(w)
     beta, *_ = np.linalg.lstsq(A * sw[:, None], y * sw, rcond=None)
-    return y - A @ beta
+    return beta
 
 
-def partial_axes(df, key, keys, w):
+def wls_resid(y, X, w, y_apply=None):
+    """Residuals of a weighted least-squares fit of y on X (intercept added).
+
+    With `y_apply`, the fit is still estimated from `y` but the residual is
+    taken of `y_apply`. That is how the held-out panels are built: the
+    adjustment for the other predictors is estimated on the dev split, where
+    the regression is fitted, and then applied to the test-split ULAS.
+    """
+    A = np.column_stack([np.ones(len(y)), X])
+    beta = wls_beta(y, X, w)
+    return (y if y_apply is None else y_apply) - A @ beta
+
+
+def partial_axes(df, key, keys, w, response='uuas'):
     """Added-variable (partial regression) coordinates for predictor `key`.
 
     Residualise both ULAS and `key` on the *other* predictors. The weighted
@@ -85,27 +98,65 @@ def partial_axes(df, key, keys, w):
     This matters here: sd(log n) correlates +0.56 with mean(log n), which is
     itself strongly negative for ULAS, so a raw scatter of ULAS against
     sd(log n) slopes downward even though the partial effect is positive.
+
+    With `response='test_uuas'` the vertical coordinate is the held-out ULAS,
+    adjusted by the dev-estimated contribution of the other predictors and
+    plotted against an x-axis that is unchanged, since the predictors are
+    corpus properties and do not depend on the split. Nothing about the model
+    is re-estimated on the test edges, so the drawn line remains the dev fit
+    and the points are a genuine out-of-sample comparison against it.
     """
     others = [k for k in keys if k != key]
     X = df[others].to_numpy(dtype=float)
-    ry = wls_resid(df['uuas'].to_numpy(dtype=float), X, w)
+    y_dev = df['uuas'].to_numpy(dtype=float)
+    y_apply = None if response == 'uuas' else df[response].to_numpy(dtype=float)
+    ry = wls_resid(y_dev, X, w, y_apply=y_apply)
     rx = wls_resid(df[key].to_numpy(dtype=float), X, w)
     return rx, ry
 
 
-def load_model(uuas_path, sim, length):
-    u = pd.read_csv(uuas_path, sep='\t')
+def read_by_relation(path):
+    u = pd.read_csv(path, sep='\t')
     if 'total' not in u.columns and {'correct', 'uuas'}.issubset(u.columns):
         u['total'] = u['correct'] / u['uuas']
-    u = u.set_index('relation')
+    return u.set_index('relation')
+
+
+def load_model(uuas_path, sim, length, test_path=None):
+    u = read_by_relation(uuas_path)
     c = u.index.intersection(sim.index).intersection(length.index)
-    return pd.DataFrame({
+    cols = {
         'uuas': u.loc[c, 'uuas'],
         'total': u.loc[c, 'total'],
         'mean_log_length': length.loc[c, 'mean_log_length'],
         'sd_log_length': length.loc[c, 'stdev_log_length'],
         'head_sim_entropy': sim.loc[c, 'head_sim_entropy_bits'],
-    }).dropna()
+    }
+    if test_path is not None:
+        t = read_by_relation(test_path)
+        # Relations absent from the test split are dropped by the dropna below.
+        cols['test_uuas'] = t['uuas'].reindex(c)
+        cols['test_total'] = t['total'].reindex(c)
+    return pd.DataFrame(cols).dropna()
+
+
+def response_column(args):
+    return 'uuas' if args.ulas == 'dev' else 'test_uuas'
+
+
+def area_column(args):
+    """Which edge count sets a point's area.
+
+    The area says how precisely that point's ULAS is measured, so it follows
+    the split the ULAS is measured on -- which for the dev panels is also the
+    relation's weight in the regression.
+    """
+    return 'total' if args.ulas == 'dev' else 'test_total'
+
+
+def ylabel_for(args):
+    stem = 'test ULAS' if args.ulas == 'test' else 'ULAS'
+    return stem if args.marginal else f'{stem}, residual'
 
 
 def draw_panel(label, df, key, xlabel, args):
@@ -115,12 +166,20 @@ def draw_panel(label, df, key, xlabel, args):
     differ, being set from this panel's own data rather than shared down a column.
     """
     keys = [k for k, _ in PREDICTORS]
-    w = df['total'].to_numpy(dtype=float)
+    resp = response_column(args)
+    w = df['total'].to_numpy(dtype=float)              # regression weights: dev
+    area_w = df[area_column(args)].to_numpy(dtype=float)
     if args.marginal:
-        x, y = df[key].to_numpy(dtype=float), df['uuas'].to_numpy(dtype=float)
+        x = df[key].to_numpy(dtype=float)
+        y, y_dev = df[resp].to_numpy(dtype=float), df['uuas'].to_numpy(dtype=float)
+        x_dev = x
     else:
-        x, y = partial_axes(df, key, keys, w)
-    slope, intercept, corr = weighted_fit(x, y, w)
+        x, y = partial_axes(df, key, keys, w, response=resp)
+        x_dev, y_dev = partial_axes(df, key, keys, w)
+    # The line is always the dev fit, so that a held-out panel is compared
+    # against the published model rather than against one refitted on itself.
+    slope, intercept, _ = weighted_fit(x_dev, y_dev, w)
+    got, _, corr = weighted_fit(x, y, area_w)
 
     fw, fh = (float(v) for v in args.figsize.split(','))
     fig, ax = plt.subplots(figsize=(fw, fh), facecolor=SURFACE)
@@ -131,7 +190,7 @@ def draw_panel(label, df, key, xlabel, args):
         ax.axhline(0, color=AXIS, linewidth=0.7, zorder=1)
         ax.axvline(0, color=AXIS, linewidth=0.7, zorder=1)
 
-    sizes = 6 + 150 * (w / w.max())
+    sizes = 6 + 150 * (area_w / area_w.max())
     ax.scatter(x, y, s=sizes, alpha=0.5, color=POINT, edgecolor='white',
                linewidth=0.5, zorder=3)
 
@@ -147,7 +206,7 @@ def draw_panel(label, df, key, xlabel, args):
         # The heaviest relations are the ones that determine the slope, so those
         # are the ones worth naming; a label goes clear of its own marker, whose
         # radius in points is sqrt(area)/2.
-        order = np.argsort(w)[::-1][:args.annotate]
+        order = np.argsort(area_w)[::-1][:args.annotate]
         rels = df.index.to_numpy()
         flip = xlim[0] + 0.78 * (xlim[1] - xlim[0])   # label leftwards near the right edge
         for i in order:
@@ -162,8 +221,7 @@ def draw_panel(label, df, key, xlabel, args):
             ha='right', va='top', fontsize=8, color=INK)
     ax.set_xlabel(xlabel if args.marginal else f'{xlabel}, residual',
                   fontsize=8.5, color=INK)
-    ax.set_ylabel('ULAS' if args.marginal else 'ULAS, residual',
-                  fontsize=8.5, color=INK)
+    ax.set_ylabel(ylabel_for(args), fontsize=8.5, color=INK)
     ax.tick_params(labelsize=7, length=0, colors=INK_2)
     for s in ('top', 'right'):
         ax.spines[s].set_visible(False)
@@ -174,8 +232,11 @@ def draw_panel(label, df, key, xlabel, args):
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(args.out, dpi=300, bbox_inches='tight', facecolor=SURFACE)
     kind = 'marginal' if args.marginal else 'partial'
-    print(f'Saved {args.out}  ({label}, {key}, {kind}, n = {len(df)})')
-    print(f'  slope = {slope:+.4f}   weighted r = {corr:+.4f}')
+    print(f'Saved {args.out}  ({label}, {key}, {kind}, {args.ulas} ULAS, n = {len(df)})')
+    print(f'  dev-fitted slope = {slope:+.4f}   weighted r = {corr:+.4f}')
+    if args.ulas == 'test':
+        print(f'  slope through the plotted test points = {got:+.4f} '
+              f'({abs(got - slope) / abs(slope):.1%} from the dev fit, not refitted)')
 
 
 def main():
@@ -187,6 +248,13 @@ def main():
     ap.add_argument('--out', required=True)
     ap.add_argument('--width', type=float, default=6.9)
     ap.add_argument('--row-height', type=float, default=1.72)
+    ap.add_argument('--ulas', choices=('dev', 'test'), default='dev',
+                    help="which split's ULAS goes on the vertical axis. With "
+                         "'test' the regression is still fitted on dev -- the "
+                         "line, and the adjustment for the other predictors, "
+                         "come from the dev fit and only the points are "
+                         "held-out, so the panel shows prediction rather than "
+                         "fit. Relations absent from the test split are dropped.")
     ap.add_argument('--panel', default=None, metavar='PREDICTOR',
                     help='draw only this predictor, for one model, as a standalone '
                          f'figure. One of: {", ".join(k for k, _ in PREDICTORS)}.')
@@ -213,8 +281,10 @@ def main():
     rows = []
     for spec in args.spec:
         label, results, ck = spec.rsplit(':', 2)
-        path = Path(results) / f'layer-{int(ck):02d}' / 'dev.uuas_by_relation'
-        rows.append((label, load_model(path, sim, length)))
+        layer = Path(results) / f'layer-{int(ck):02d}'
+        test = layer / 'test.uuas_by_relation' if args.ulas == 'test' else None
+        rows.append((label, load_model(layer / 'dev.uuas_by_relation', sim,
+                                       length, test_path=test)))
 
     if args.panel:
         labels = dict(PREDICTORS)
@@ -237,17 +307,24 @@ def main():
     if n == 1:
         axes = axes[None, :]
 
-    # Precompute coordinates so the axis limits can be shared per column.
+    # Precompute coordinates so the axis limits can be shared per column. Each
+    # entry is (x, y, area weights, dev-fitted line), the line being kept
+    # separate from the points so a held-out panel is drawn against the fit
+    # rather than against a slope refitted on the plotted data.
+    resp = response_column(args)
     coords = {}
     for r, (label, df) in enumerate(rows):
         w = df['total'].to_numpy(dtype=float)
-        y = df['uuas'].to_numpy(dtype=float)
+        area_w = df[area_column(args)].to_numpy(dtype=float)
         for key in keys:
             if args.marginal:
-                coords[(r, key)] = (df[key].to_numpy(dtype=float), y, w)
+                x = df[key].to_numpy(dtype=float)
+                y, y_dev = df[resp].to_numpy(dtype=float), df['uuas'].to_numpy(dtype=float)
+                x_dev = x
             else:
-                rx, ry = partial_axes(df, key, keys, w)
-                coords[(r, key)] = (rx, ry, w)
+                x, y = partial_axes(df, key, keys, w, response=resp)
+                x_dev, y_dev = partial_axes(df, key, keys, w)
+            coords[(r, key)] = (x, y, area_w, weighted_fit(x_dev, y_dev, w))
 
     xlims, ylims = {}, {}
     for key in keys:
@@ -265,8 +342,7 @@ def main():
         for c, (key, xlabel) in enumerate(PREDICTORS):
             ax = axes[r, c]
             ax.set_facecolor(SURFACE)
-            x, y, w = coords[(r, key)]
-            slope, intercept, corr = weighted_fit(x, y, w)
+            x, y, w, (slope, intercept, _) = coords[(r, key)]
 
             ax.grid(True, color=GRID, linewidth=0.6, zorder=0)
             ax.set_axisbelow(True)
@@ -295,21 +371,33 @@ def main():
             if c == 0:
                 ax.set_ylabel(label, fontsize=8.5, color=INK)
 
+    if args.ulas == 'test':
+        fig.supylabel(ylabel_for(args), fontsize=8.5, color=INK_2, x=0.005)
     fig.tight_layout(h_pad=0.6, w_pad=0.7)
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(args.out, dpi=300, bbox_inches='tight', facecolor=SURFACE)
     print(f'Saved {args.out}  ({n} rows x 3 columns)')
 
     kind = 'marginal correlations' if args.marginal else 'partial slopes (= regression coefficients)'
-    print(f'\nweighted {kind}:')
+    print(f'\nweighted {kind}, from the dev fit (the line drawn in each panel):')
     print(f'{"model":18s} ' + ' '.join(f'{k:>18s}' for k in keys))
     for r, (label, df) in enumerate(rows):
         vals = []
         for key in keys:
-            x, y, w = coords[(r, key)]
-            slope, _, corr = weighted_fit(x, y, w)
+            _, _, _, (slope, _, corr) = coords[(r, key)]
             vals.append(corr if args.marginal else slope)
         print(f'{label:18s} ' + ' '.join(f'{v:>18.4f}' for v in vals))
+
+    if args.ulas == 'test':
+        print('\nsame slopes, refitted on the plotted test points '
+              '(not drawn; for comparison only):')
+        for r, (label, df) in enumerate(rows):
+            vals = []
+            for key in keys:
+                x, y, w, _ = coords[(r, key)]
+                slope, _, corr = weighted_fit(x, y, w)
+                vals.append(corr if args.marginal else slope)
+            print(f'{label:18s} ' + ' '.join(f'{v:>18.4f}' for v in vals))
 
 
 if __name__ == '__main__':
