@@ -149,11 +149,23 @@ def response_column(args):
 
 
 def area_column(args):
-    """Which edge count sets a point's area.
+    """Which edge count sets a point's area: always the regression weight.
 
-    The area says how precisely that point's ULAS is measured, so it follows
-    the split the ULAS is measured on -- which for the dev panels is also the
-    relation's weight in the regression.
+    A point's area says how much that relation counted towards the line, so it
+    is the dev-set edge count even when the plotted ULAS is held out. The
+    weights are a fixed property of the fit and do not change when the response
+    does; using test counts instead would resize the points for a reason
+    unrelated to the fit the figure is about.
+    """
+    return 'total'
+
+
+def refit_column(args):
+    """Weights for the comparison refit on the plotted points.
+
+    Distinct from the areas: this one is a regression on the test-split ULAS,
+    so its natural weights are the test edge counts those values were measured
+    from. It is reported, never drawn.
     """
     return 'total' if args.ulas == 'dev' else 'test_total'
 
@@ -173,6 +185,7 @@ def draw_panel(label, df, key, xlabel, args):
     resp = response_column(args)
     w = df['total'].to_numpy(dtype=float)              # regression weights: dev
     area_w = df[area_column(args)].to_numpy(dtype=float)
+    refit_w = df[refit_column(args)].to_numpy(dtype=float)
     if args.marginal:
         x = df[key].to_numpy(dtype=float)
         y, y_dev = df[resp].to_numpy(dtype=float), df['uuas'].to_numpy(dtype=float)
@@ -183,7 +196,7 @@ def draw_panel(label, df, key, xlabel, args):
     # The line is always the dev fit, so that a held-out panel is compared
     # against the published model rather than against one refitted on itself.
     slope, intercept, _ = weighted_fit(x_dev, y_dev, w)
-    got, _, corr = weighted_fit(x, y, area_w)
+    got, _, corr = weighted_fit(x, y, refit_w)
 
     fw, fh = (float(v) for v in args.figsize.split(','))
     fig, ax = plt.subplots(figsize=(fw, fh), facecolor=SURFACE)
@@ -312,14 +325,15 @@ def main():
         axes = axes[None, :]
 
     # Precompute coordinates so the axis limits can be shared per column. Each
-    # entry is (x, y, area weights, dev-fitted line), the line being kept
-    # separate from the points so a held-out panel is drawn against the fit
-    # rather than against a slope refitted on the plotted data.
+    # entry is (x, y, area weights, refit weights, dev-fitted line), the line
+    # being kept separate from the points so a held-out panel is drawn against
+    # the fit rather than against a slope refitted on the plotted data.
     resp = response_column(args)
     coords = {}
     for r, (label, df) in enumerate(rows):
         w = df['total'].to_numpy(dtype=float)
         area_w = df[area_column(args)].to_numpy(dtype=float)
+        refit_w = df[refit_column(args)].to_numpy(dtype=float)
         for key in keys:
             if args.marginal:
                 x = df[key].to_numpy(dtype=float)
@@ -328,7 +342,8 @@ def main():
             else:
                 x, y = partial_axes(df, key, keys, w, response=resp)
                 x_dev, y_dev = partial_axes(df, key, keys, w)
-            coords[(r, key)] = (x, y, area_w, weighted_fit(x_dev, y_dev, w))
+            coords[(r, key)] = (x, y, area_w, refit_w,
+                                weighted_fit(x_dev, y_dev, w))
 
     xlims, ylims = {}, {}
     for key in keys:
@@ -346,7 +361,7 @@ def main():
         for c, (key, xlabel) in enumerate(PREDICTORS):
             ax = axes[r, c]
             ax.set_facecolor(SURFACE)
-            x, y, w, (slope, intercept, _) = coords[(r, key)]
+            x, y, w, _, (slope, intercept, _) = coords[(r, key)]
 
             ax.grid(True, color=GRID, linewidth=0.6, zorder=0)
             ax.set_axisbelow(True)
@@ -388,7 +403,7 @@ def main():
     for r, (label, df) in enumerate(rows):
         vals = []
         for key in keys:
-            _, _, _, (slope, _, corr) = coords[(r, key)]
+            _, _, _, _, (slope, _, corr) = coords[(r, key)]
             vals.append(corr if args.marginal else slope)
         print(f'{label:18s} ' + ' '.join(f'{v:>18.4f}' for v in vals))
 
@@ -398,7 +413,7 @@ def main():
         for r, (label, df) in enumerate(rows):
             vals = []
             for key in keys:
-                x, y, w, _ = coords[(r, key)]
+                x, y, _, w, _ = coords[(r, key)]
                 slope, _, corr = weighted_fit(x, y, w)
                 vals.append(corr if args.marginal else slope)
             print(f'{label:18s} ' + ' '.join(f'{v:>18.4f}' for v in vals))
