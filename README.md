@@ -86,22 +86,29 @@ reproduce **without** any external data.
 
 ### 1. Figures from bundled results (no GPU, no external data)
 
-The saved probe outputs (`results-hface/`, roberta `results/`) and the curve
+The saved probe outputs (`results-convB/`, roberta `results/`) and the curve
 `.npz` are included, so the BERT-base figures regenerate directly. Everything
 downstream of the `.npz` needs neither the corpus nor a GPU:
 
 ```bash
 PY=/path/to/conda/envs/sp-env/bin/python   # or your own sp-env python
 B=experiments/bert-base-prd
-NPZ=$B/figures/uuas_mean_curves_convB.npz          # the run of record
-HEATMAP_NPZ=$B/figures/uuas_mean_curves_by_checkpoint.npz  # fig:R2-log-distance-model
+NPZ=$B/figures/uuas_mean_curves_by_checkpoint.npz   # 12 post-block checkpoints
+CK16=$B/figures/uuas_mean_curves_ck16.npz           # the optimal checkpoint alone
+RELS="det ccomp neg cop aux vmod cc advcl"
 
 # fig:dependencies1, fig:dependencies2
 $PY scripts/plot_selected_relations.py --results-dir $B/results-convB \
     --out $B/figures/selected_uuas_by_relation.png --model-label "BERT-base"
 
-# fig:R2-log-distance-model
-$PY scripts/figures/regression_uas_vs_log_distance.py --curves $HEATMAP_NPZ
+# fig:R2-log-distance-model, restricted to the relations the text discusses
+$PY scripts/figures/regression_uas_vs_log_distance.py --curves $NPZ \
+    --relations $RELS --out $B/figures/r2_heatmap_uas_vs_log_distance.png
+
+# fig:ulas-vs-log-distance, the data behind it
+$PY scripts/figures/ulas_vs_log_distance_curves.py --curves $CK16 --checkpoint 16 \
+    --relations $RELS --model-label "BERT-base" \
+    --out $B/figures/ulas_vs_log_distance_ck16.png
 
 # fig:ULAS-only-dendrogram, then fig:dendrogram_relations (four panels over alpha)
 $PY scripts/figures/cluster_relations_by_distance.py --curves $NPZ --alpha 1.0 \
@@ -119,18 +126,11 @@ $PY scripts/plot_selected_relations.py \
 Every script lives under `scripts/`; `experiments/` holds only the manifest, the
 drivers, and saved outputs. There is one copy of each analysis, not two.
 
-**Two BERT-base runs are bundled, and the paper uses both.** They differ in the
-LayerNorm convention, hence in peak ULAS, so it matters which figure came from
-which:
-
-| bundled run | peak dev ULAS | what the paper takes from it |
-|---|---|---|
-| `results-convB` | 0.815 | `tab:regression_results`, the BERT-base row of `tab:other-models`, and the figures above — the run of record |
-| `results-hface` | 0.812 | `fig:R2-log-distance-model` only, whose 13 columns are the post-block checkpoints **plus checkpoint 16**; `results-convB`'s curve NPZ covers the 12 post-block ones |
-
-`figures/uuas_mean_curves_by_checkpoint.npz` belongs to `results-hface` and
-`figures/uuas_mean_curves_convB.npz` to `results-convB`; the commands above use
-whichever the paper used.
+**One BERT-base run is bundled**, `results-convB` (peak dev ULAS 0.815), and
+every BERT-base number and figure in the paper comes from it. An earlier run
+under a different LayerNorm convention was previously shipped alongside it and
+supplied one figure; that split has been removed, so nothing in the paper mixes
+runs.
 
 ### 2. Full reproduction from scratch (SLURM + external data)
 
