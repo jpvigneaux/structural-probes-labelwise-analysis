@@ -44,6 +44,7 @@ import statsmodels.api as sm
 sys.path.insert(0, str(Path(__file__).resolve().parent / 'regression'))
 import _manifest                                    # noqa: E402
 from _regdata import load_regression_frame          # noqa: E402
+from holdout_predictivity import heldout_frame, heldout_stats   # noqa: E402
 
 BASE = ['head_sim_entropy', 'mean_log_length']
 FULL = BASE + ['sd_log_length']
@@ -209,6 +210,24 @@ def verify_run(key, run, roots, predictors, rep, verbose):
         var = df.assign(sd_log_length=df['sd_log_length'] ** 2)
         rep.check(label, 'R^2 with variance', pub.get('r2_var'),
                   fit(var, FULL).rsquared)
+
+    # --- held-out predictivity ------------------------------------------------
+    if 'heldout' in pub:
+        ho, dropped = heldout_frame(results, ck, predictors['sim'],
+                                    predictors['length'])
+        stats = heldout_stats(ho)
+        want = pub['heldout']
+        rep.check(label, 'R^2 dev, relations shared with test',
+                  want.get('r2_dev_heldout'), stats['r2_dev'])
+        rep.check(label, 'R^2 on held-out edges', want.get('r2_test'),
+                  stats['r2_test'])
+        rep.check(label, 'Q^2 leave-one-relation-out', want.get('q2_loo'),
+                  stats['q2_loo'])
+        # The two frames must differ only by the relations the test split lacks;
+        # anything else means the joins have drifted apart.
+        if len(ho) + len(dropped) != len(df):
+            rep.rows.append((label, 'held-out join size', float(len(df)),
+                             float(len(ho) + len(dropped)), 0, 'FAIL'))
 
     # --- reliability ceiling --------------------------------------------------
     rep.check(label, 'ULAS reliability', pub.get('reliability'), reliability(df))

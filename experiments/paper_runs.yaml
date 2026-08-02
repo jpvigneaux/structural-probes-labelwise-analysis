@@ -46,6 +46,10 @@ runs:
     published:
       peak_ulas: 0.815
       r2: 0.735
+      # Fitted on dev, scored on the test split and by leave-one-relation-out.
+      # r2_dev_heldout is the dev R^2 over the 41 relations that occur in both
+      # sections, so it is comparable with r2_test; r2 above covers all 42.
+      heldout: {r2_dev_heldout: 0.736, r2_test: 0.744, q2_loo: 0.636}
       n_relations: 42
       coef: {head_sim_entropy: -0.082, mean_log_length: -0.252, sd_log_length: 0.163}
       se: {const: 0.038, head_sim_entropy: 0.014, mean_log_length: 0.030, sd_log_length: 0.066}
@@ -87,6 +91,10 @@ runs:
     published:
       peak_ulas: 0.788
       r2: 0.609
+      # Fitted on dev, scored on the test split and by leave-one-relation-out.
+      # r2_dev_heldout is the dev R^2 over the 41 relations that occur in both
+      # sections, so it is comparable with r2_test; r2 above covers all 42.
+      heldout: {r2_dev_heldout: 0.61, r2_test: 0.573, q2_loo: 0.503}
       coef: {head_sim_entropy: -0.067, mean_log_length: -0.226, sd_log_length: 0.186}
       adj_r2_ladder: [0.523, 0.579, 0.605]
       p_sd: 0.017
@@ -121,6 +129,10 @@ runs:
     published:
       peak_ulas: 0.762
       r2: 0.700
+      # Fitted on dev, scored on the test split and by leave-one-relation-out.
+      # r2_dev_heldout is the dev R^2 over the 41 relations that occur in both
+      # sections, so it is comparable with r2_test; r2 above covers all 42.
+      heldout: {r2_dev_heldout: 0.7, r2_test: 0.668, q2_loo: 0.586}
       coef: {head_sim_entropy: -0.056, mean_log_length: -0.216, sd_log_length: 0.103}
       adj_r2_ladder: [0.660, 0.676, 0.668]
       p_sd: 0.095
@@ -154,6 +166,10 @@ runs:
     published:
       peak_ulas: 0.775
       r2: 0.744
+      # Fitted on dev, scored on the test split and by leave-one-relation-out.
+      # r2_dev_heldout is the dev R^2 over the 41 relations that occur in both
+      # sections, so it is comparable with r2_test; r2 above covers all 42.
+      heldout: {r2_dev_heldout: 0.744, r2_test: 0.725, q2_loo: 0.623}
       coef: {head_sim_entropy: -0.076, mean_log_length: -0.218, sd_log_length: 0.143}
       adj_r2_ladder: [0.686, 0.723, 0.724]
       p_sd: 0.017
@@ -190,6 +206,10 @@ runs:
     published:
       peak_ulas: 0.783
       r2: 0.746
+      # Fitted on dev, scored on the test split and by leave-one-relation-out.
+      # r2_dev_heldout is the dev R^2 over the 41 relations that occur in both
+      # sections, so it is comparable with r2_test; r2 above covers all 42.
+      heldout: {r2_dev_heldout: 0.747, r2_test: 0.728, q2_loo: 0.548}
       coef: {head_sim_entropy: -0.069, mean_log_length: -0.193, sd_log_length: 0.125}
       adj_r2_ladder: [0.691, 0.726, 0.719]
       p_sd: 0.019
@@ -223,6 +243,10 @@ runs:
     published:
       peak_ulas: 0.093
       r2: 0.195
+      # Fitted on dev, scored on the test split and by leave-one-relation-out.
+      # r2_dev_heldout is the dev R^2 over the 41 relations that occur in both
+      # sections, so it is comparable with r2_test; r2 above covers all 42.
+      heldout: {r2_dev_heldout: 0.195, r2_test: 0.072, q2_loo: -0.304}
       adj_r2: 0.132
       f_stat: 3.07
       coef: {head_sim_entropy: 0.014, mean_log_length: -0.002, sd_log_length: -0.060}

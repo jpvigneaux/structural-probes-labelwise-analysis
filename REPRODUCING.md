@@ -281,6 +281,27 @@ Reliability is 0.98-0.99 for every pre-trained model in the paper and 0.896 for
 the permuted-pretraining control, so none of the regressions is noise-limited
 and the control's low `R^2` is not a floor effect.
 
+A fifth asks whether the regression predicts rather than merely fits, which with
+42 observations and three predictors is a fair question to put to it:
+
+```bash
+# fit on dev ULAS, then score on (a) the same relations re-measured on the test
+# section and (b) relations left out of the fit entirely
+python scripts/regression/holdout_predictivity.py \
+    --spec "BERT-base:RESULTS:16" --spec "RoBERTa-Shuffle-n1:RESULTS_SHUF:9" \
+    --sim sim_static_fasttext.tsv --len dep-lengths-ptb.tsv
+```
+
+Both predictors come from `ptb3-wsj-train.conllx` and the fit from the dev
+split, so the test section enters neither. Carrying the fit to it costs little
+(BERT-base 0.736 to 0.744; the five pre-trained models range 0.573 to 0.744),
+and leaving out one relation at a time still predicts the omitted one
+(`Q^2` = 0.503 to 0.636). The permuted control fails both: 0.072 on held-out
+edges and `Q^2` = -0.304, worse than predicting every relation by the weighted
+mean. These are the numbers behind `fig:head-sim-entropy` and
+`fig:predictor-grid`, which plot held-out points against dev-fitted lines; both
+cover 41 relations rather than 42, `csubjpass` having no test-section edges.
+
 `compare_dispersion_scale.py` matters for how the paper argues. A second-order
 Taylor expansion of `E[f(X)]` about the mean introduces dispersion as `sigma^2`,
 which would make the variance the indicated regressor. It fits worse in all five
