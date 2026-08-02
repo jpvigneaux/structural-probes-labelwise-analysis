@@ -38,7 +38,8 @@ anything.
 | `fig:dependencies1`, `fig:dependencies2` — ULAS by relation | [`scripts/plot_selected_relations.py`](scripts/plot_selected_relations.py) |
 | `fig:dependencies-shuffled` — the same for RoBERTa-Shuffle-n1 | same, on the `shufflen1` run |
 | `fig:performance-as-a-function-of-distance` — mean ULAS vs arc length | [`scripts/figures/uuas_mean_curves_by_checkpoint.py`](scripts/figures/uuas_mean_curves_by_checkpoint.py) → [`uuas_mean_curves_png.py`](scripts/figures/uuas_mean_curves_png.py) |
-| `fig:R2-log-distance-model` — R² heat map, log-linear decay | [`scripts/figures/regression_uas_vs_log_distance.py`](scripts/figures/regression_uas_vs_log_distance.py) |
+| `fig:R2-log-distance-model` — R² heat map, log-linear decay | [`scripts/figures/regression_uas_vs_log_distance.py`](scripts/figures/regression_uas_vs_log_distance.py) `--relations` |
+| `fig:ulas-vs-log-distance` — the data behind it, at checkpoint 16 | [`scripts/figures/ulas_vs_log_distance_curves.py`](scripts/figures/ulas_vs_log_distance_curves.py) |
 | `fig:ULAS-only-dendrogram` — relation dendrogram, α = 1 | [`scripts/figures/cluster_relations_by_distance.py`](scripts/figures/cluster_relations_by_distance.py) `--alpha 1.0` |
 | `tab:regression_results` — the three-predictor WLS regression | [`scripts/regression/ptb_wls_regression.py`](scripts/regression/ptb_wls_regression.py) |
 
