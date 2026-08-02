@@ -94,6 +94,10 @@ def partial_axes(df, key, keys, w, response='uuas'):
     Residualise both ULAS and `key` on the *other* predictors. The weighted
     slope through the resulting cloud equals this predictor's coefficient in
     the full multiple regression, so the panel agrees with the reported table.
+    That equality is the Frisch-Waugh-Lovell theorem (Frisch and Waugh 1933;
+    Lovell 1963); for the plot built on it see Belsley, Kuh and Welsch (1980) or
+    Cook and Weisberg (1982). The paper states the construction in its appendix
+    "How to read the predictor figures".
 
     This matters here: sd(log n) correlates +0.56 with mean(log n), which is
     itself strongly negative for ULAS, so a raw scatter of ULAS against
