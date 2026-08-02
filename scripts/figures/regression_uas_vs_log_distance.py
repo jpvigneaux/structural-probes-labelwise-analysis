@@ -40,6 +40,13 @@ def parse_args():
                                / 'uuas_mean_curves_by_checkpoint.npz'))
     p.add_argument('--min-points', type=int, default=3,
                    help='Min observed distances required to fit (default: 3)')
+    p.add_argument('--relations', nargs='+', default=None,
+                   help='Draw only these relations, in decreasing mean R^2 as '
+                        'usual. Use to restrict the figure to the relations the '
+                        'text actually discusses; the CSV is unaffected and '
+                        'still covers every relation.')
+    p.add_argument('--out', default=None,
+                   help='Output PNG (default: figures/r2_heatmap_uas_vs_log_distance.png)')
     return p.parse_args()
 
 
@@ -53,6 +60,13 @@ def main():
 
     checkpoints = npz['checkpoints'].tolist()
     relations   = npz['rel_names'].astype(str).tolist()
+    keep = None
+    if args.relations:
+        missing = [r for r in args.relations if r not in relations]
+        if missing:
+            raise SystemExit(f'not in the curves file: {missing}\n'
+                             f'available: {sorted(relations)}')
+        keep = set(args.relations)
     n_ck  = len(checkpoints)
     n_rel = len(relations)
 
@@ -160,19 +174,25 @@ document.querySelectorAll('.tbl th').forEach((th, ci) => {{
 
     # ── R² heatmap ────────────────────────────────────────────────────────────
     r2_wide = df.pivot(index='relation', columns='checkpoint', values='R2')
+    if keep is not None:
+        # Restrict the drawn rows only; the CSV above still covers everything,
+        # so the median R^2 the paper quotes is unaffected by this filter.
+        r2_wide = r2_wide.loc[[r for r in r2_wide.index if r in keep]]
     # Sort relations by mean R² descending
     r2_wide = r2_wide.loc[r2_wide.mean(axis=1).sort_values(ascending=False).index]
     # Drop relations that have no valid R² across all checkpoints
     r2_wide = r2_wide[~r2_wide.isna().all(axis=1)]
 
-    # Width scales with the number of checkpoints so that a cell keeps the same
-    # printed size whatever the depth of the model: 12 columns (BERT-base,
-    # DeBERTa-v3-base, GPT-2) reproduce the original 5.0in, while ModernBERT-base
-    # (22) and GPT-J (28) widen instead of compressing their annotations. Height
-    # is fixed because the rows are the relations, which do not vary by model.
-    n_col = len(r2_wide.columns)
+    # Both dimensions scale with the matrix so that a cell keeps the same printed
+    # size whatever is being drawn. Width: 12 columns (BERT-base, DeBERTa-v3-base,
+    # GPT-2) reproduce the original 5.0in, while ModernBERT-base (22) and GPT-J
+    # (28) widen instead of compressing their annotations. Height likewise, since
+    # --relations can cut the 41 rows down to the handful the text discusses;
+    # leaving it fixed would stretch eight rows over the height of forty-one.
+    n_col, n_row = len(r2_wide.columns), len(r2_wide)
     fig_w = 1.04 + 0.33 * n_col
-    fig, ax = plt.subplots(figsize=(fig_w, 7.5))
+    fig_h = max(2.2, 0.95 + 0.175 * n_row)
+    fig, ax = plt.subplots(figsize=(fig_w, fig_h))
     cmap = plt.get_cmap('RdYlGn')
     cmap.set_bad(color='#e0e0e0')   # grey for NaN
 
@@ -202,6 +222,8 @@ document.querySelectorAll('.tbl th').forEach((th, ci) => {{
     cbar.ax.tick_params(labelsize=9)
     plt.tight_layout()
     heatmap_path = script_dir / 'figures' / 'r2_heatmap_uas_vs_log_distance.png'
+    if args.out:
+        heatmap_path = Path(args.out)
     fig.savefig(heatmap_path, dpi=300, bbox_inches='tight')
     print(f'Heatmap → {heatmap_path}')
 
