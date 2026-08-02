@@ -16,9 +16,20 @@ the weighted least-squares fit of the marginal relationship; the full model
 controls for the other two predictors, so these slopes are marginal, not
 partial, and are shown to convey direction and spread.
 
+One cell of the grid can also be drawn on its own, with --panel, for use in the
+main text at a size where the relation labels fit. That is a different rendering
+of the same coordinates, not a different computation: the residualisation is
+per-model, so a panel taken out of the grid is unchanged except for the axis
+limits, which are shared down a column in the grid and set from the panel's own
+data when it stands alone.
+
 Usage:
     python plot_predictor_grid.py --spec "BERT-base:RESULTS:16" \\
         --spec "GPT-2-base:RESULTS2:16" --sim sim.tsv --len lengths.tsv --out grid.png
+
+    python plot_predictor_grid.py --spec "BERT-base:RESULTS:16" \\
+        --sim sim.tsv --len lengths.tsv --panel head_sim_entropy \\
+        --annotate 12 --out head_sim_entropy_bertbase.png
 """
 
 import argparse
@@ -97,6 +108,76 @@ def load_model(uuas_path, sim, length):
     }).dropna()
 
 
+def draw_panel(label, df, key, xlabel, args):
+    """One predictor, one model, as a standalone figure.
+
+    Same coordinates as the corresponding cell of the grid; only the axis limits
+    differ, being set from this panel's own data rather than shared down a column.
+    """
+    keys = [k for k, _ in PREDICTORS]
+    w = df['total'].to_numpy(dtype=float)
+    if args.marginal:
+        x, y = df[key].to_numpy(dtype=float), df['uuas'].to_numpy(dtype=float)
+    else:
+        x, y = partial_axes(df, key, keys, w)
+    slope, intercept, corr = weighted_fit(x, y, w)
+
+    fw, fh = (float(v) for v in args.figsize.split(','))
+    fig, ax = plt.subplots(figsize=(fw, fh), facecolor=SURFACE)
+    ax.set_facecolor(SURFACE)
+    ax.grid(True, color=GRID, linewidth=0.6, zorder=0)
+    ax.set_axisbelow(True)
+    if not args.marginal:
+        ax.axhline(0, color=AXIS, linewidth=0.7, zorder=1)
+        ax.axvline(0, color=AXIS, linewidth=0.7, zorder=1)
+
+    sizes = 6 + 150 * (w / w.max())
+    ax.scatter(x, y, s=sizes, alpha=0.5, color=POINT, edgecolor='white',
+               linewidth=0.5, zorder=3)
+
+    padx = 0.06 * (x.max() - x.min())
+    pady = 0.08 * (y.max() - y.min())
+    xlim = (x.min() - padx, x.max() + padx)
+    xs = np.linspace(*xlim, 50)
+    ax.plot(xs, intercept + slope * xs, color=FIT, linewidth=1.6, zorder=4)
+    ax.set_xlim(*xlim)
+    ax.set_ylim(y.min() - pady, y.max() + pady)
+
+    if args.annotate:
+        # The heaviest relations are the ones that determine the slope, so those
+        # are the ones worth naming; a label goes clear of its own marker, whose
+        # radius in points is sqrt(area)/2.
+        order = np.argsort(w)[::-1][:args.annotate]
+        rels = df.index.to_numpy()
+        flip = xlim[0] + 0.78 * (xlim[1] - xlim[0])   # label leftwards near the right edge
+        for i in order:
+            off = np.sqrt(sizes[i]) / 2 + 1.5
+            left = x[i] > flip
+            ax.annotate(rels[i], (x[i], y[i]), textcoords='offset points',
+                        xytext=(-off if left else off, off * 0.5),
+                        ha='right' if left else 'left',
+                        fontsize=args.annotate_font, color=INK_2, zorder=5)
+
+    ax.text(0.97, 0.94, rf'$\beta={slope:+.3f}$', transform=ax.transAxes,
+            ha='right', va='top', fontsize=8, color=INK)
+    ax.set_xlabel(xlabel if args.marginal else f'{xlabel}, residual',
+                  fontsize=8.5, color=INK)
+    ax.set_ylabel('ULAS' if args.marginal else 'ULAS, residual',
+                  fontsize=8.5, color=INK)
+    ax.tick_params(labelsize=7, length=0, colors=INK_2)
+    for s in ('top', 'right'):
+        ax.spines[s].set_visible(False)
+    for s in ('left', 'bottom'):
+        ax.spines[s].set_color(AXIS)
+
+    fig.tight_layout(pad=0.4)
+    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(args.out, dpi=300, bbox_inches='tight', facecolor=SURFACE)
+    kind = 'marginal' if args.marginal else 'partial'
+    print(f'Saved {args.out}  ({label}, {key}, {kind}, n = {len(df)})')
+    print(f'  slope = {slope:+.4f}   weighted r = {corr:+.4f}')
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--spec', action='append', required=True,
@@ -106,6 +187,18 @@ def main():
     ap.add_argument('--out', required=True)
     ap.add_argument('--width', type=float, default=6.9)
     ap.add_argument('--row-height', type=float, default=1.72)
+    ap.add_argument('--panel', default=None, metavar='PREDICTOR',
+                    help='draw only this predictor, for one model, as a standalone '
+                         f'figure. One of: {", ".join(k for k, _ in PREDICTORS)}.')
+    ap.add_argument('--panel-model', default=None, metavar='LABEL',
+                    help='which --spec the panel comes from (default: the first)')
+    ap.add_argument('--figsize', default='3.15,2.65', metavar='W,H',
+                    help='size of the standalone panel, in inches. Give the size '
+                         'it will be printed at, so the font sizes are the ones '
+                         'the reader gets.')
+    ap.add_argument('--annotate', type=int, default=0, metavar='N',
+                    help='label the N heaviest relations in the standalone panel')
+    ap.add_argument('--annotate-font', type=float, default=5.6)
     ap.add_argument('--marginal', action='store_true',
                     help='plot raw ULAS against each predictor instead of the '
                          'added-variable (partial) view. Note that the marginal '
@@ -122,6 +215,20 @@ def main():
         label, results, ck = spec.rsplit(':', 2)
         path = Path(results) / f'layer-{int(ck):02d}' / 'dev.uuas_by_relation'
         rows.append((label, load_model(path, sim, length)))
+
+    if args.panel:
+        labels = dict(PREDICTORS)
+        if args.panel not in labels:
+            raise SystemExit(f'--panel must be one of {sorted(labels)}')
+        if args.panel_model:
+            chosen = [r for r in rows if r[0] == args.panel_model]
+            if not chosen:
+                raise SystemExit(f'no --spec labelled {args.panel_model!r}; '
+                                 f'have {[r[0] for r in rows]}')
+        else:
+            chosen = rows[:1]
+        draw_panel(chosen[0][0], chosen[0][1], args.panel, labels[args.panel], args)
+        return
 
     n = len(rows)
     keys = [k for k, _ in PREDICTORS]
