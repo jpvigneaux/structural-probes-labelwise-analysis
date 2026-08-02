@@ -46,7 +46,13 @@ def main():
     ap.add_argument('--ncols', type=int, default=4)
     ap.add_argument('--min-points', type=int, default=3)
     ap.add_argument('--figsize', default=None,
-                    help='WIDTH,HEIGHT in inches; default sizes from the grid')
+                    help='WIDTH,HEIGHT in inches. Give the size the figure will '
+                         'be PRINTED at, so the font sizes below are the ones '
+                         'the reader gets rather than being scaled down by LaTeX.')
+    ap.add_argument('--title-font', type=float, default=8.5)
+    ap.add_argument('--label-font', type=float, default=8.5)
+    ap.add_argument('--tick-font', type=float, default=7.0)
+    ap.add_argument('--marker-size', type=float, default=13.0)
     ap.add_argument('--dpi', type=int, default=300)
     ap.add_argument('--model-label', default='')
     args = ap.parse_args()
@@ -89,7 +95,7 @@ def main():
 
     for ax, (rel, ns, uas, fit) in zip(axes, panels):
         x = np.log(ns + 1)
-        ax.scatter(x, uas, s=13, color='#08306B', zorder=3, alpha=0.85)
+        ax.scatter(x, uas, s=args.marker_size, color='#08306B', zorder=3, alpha=0.85)
         if fit is not None:
             xs = np.linspace(x.min(), x.max(), 50)
             ax.plot(xs, fit.slope * xs + fit.intercept, color='#C14B00',
@@ -98,24 +104,26 @@ def main():
             # Colour the annotation by fit quality, on the heat map's scale, so
             # a reader moving between the two figures sees the same signal.
             col = '#1A6B22' if r2 >= 0.75 else ('#C14B00' if r2 >= 0.4 else '#B00000')
-            ax.set_title(f'{rel}   $R^2$={r2:.2f}', fontsize=8.5, color=col, pad=3)
+            ax.set_title(f'{rel}  $R^2$={r2:.2f}', fontsize=args.title_font,
+                         color=col, pad=2)
         else:
-            ax.set_title(f'{rel}   (too few)', fontsize=8.5, color='#777777', pad=3)
+            ax.set_title(f'{rel}  (too few)', fontsize=args.title_font,
+                         color='#777777', pad=2)
         ax.grid(alpha=0.25, lw=0.5)
-        ax.tick_params(labelsize=7)
+        ax.tick_params(labelsize=args.tick_font)
 
     for ax in axes[len(panels):]:
         ax.set_visible(False)
 
     # One label per edge rather than per panel.
     for ax in axes[len(panels) - ncols:len(panels)]:
-        ax.set_xlabel(r'$\ln(n+1)$', fontsize=8.5)
+        ax.set_xlabel(r'$\ln(n+1)$', fontsize=args.label_font)
     for ax in axes[::ncols]:
-        ax.set_ylabel('ULAS', fontsize=8.5)
+        ax.set_ylabel('ULAS', fontsize=args.label_font)
 
     if args.model_label:
         fig.suptitle(f'{args.model_label}, checkpoint {args.checkpoint}',
-                     fontsize=10, y=0.995)
+                     fontsize=args.label_font + 1.5, y=0.995)
     fig.tight_layout(rect=(0, 0, 1, 0.98 if args.model_label else 1.0))
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(args.out, dpi=args.dpi, bbox_inches='tight', facecolor='white')

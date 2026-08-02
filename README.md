@@ -95,7 +95,7 @@ PY=/path/to/conda/envs/sp-env/bin/python   # or your own sp-env python
 B=experiments/bert-base-prd
 NPZ=$B/figures/uuas_mean_curves_by_checkpoint.npz   # 12 post-block checkpoints
 CK16=$B/figures/uuas_mean_curves_ck16.npz           # the optimal checkpoint alone
-RELS="det ccomp neg cop aux vmod cc advcl"
+RELS="det ccomp neg cop aux vmod cc advcl nsubj dobj xcomp pcomp auxpass amod poss conj rcmod parataxis"
 
 # fig:dependencies1, fig:dependencies2
 $PY scripts/plot_selected_relations.py --results-dir $B/results-convB \
