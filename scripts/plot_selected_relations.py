@@ -41,12 +41,12 @@ import pandas as pd
 # Labels are bare relation names: the grouping is carried by the legend blocks.
 RELATION_SETS = {
     'verb-args': [
-        ('External arguments', [
+        ('Ext. args.', [
             # red shades
             ('nsubj', 'nsubj', '#B00000', '-', 's'),
             ('csubj', 'csubj', '#E06060', '--', 'o'),
         ]),
-        ('Internal arguments', [
+        ('Int. args.', [
             # blue shades
             ('dobj', 'dobj', '#08306B', '-', '^'),
             ('xcomp', 'xcomp', '#2171B5', '--', 'P'),
@@ -96,7 +96,7 @@ def load(results_dir):
     return pd.concat(records, ignore_index=True)
 
 
-def stack_legends(fig, ax, blocks, fontsize, title_fontsize):
+def stack_legends(fig, ax, blocks, fontsize, title_fontsize, width):
     """Draw one legend per group, stacked down the right-hand side of the axes.
 
     Separate legends rather than one legend with heading rows: a legend title
@@ -104,16 +104,20 @@ def stack_legends(fig, ax, blocks, fontsize, title_fontsize):
     would be indented by the handle column and would not read as a heading.
     Each block's height is measured after drawing, so the next one can be
     anchored just below it whatever the entry count or font metrics.
+
+    `width` (in axes-width units) is imposed with mode='expand', so the legend
+    box is the same width whatever the labels are. Together with the fixed
+    axes rectangle of `main`, that makes every figure in the family come out
+    at identical dimensions, which is what keeps them looking alike once
+    LaTeX has scaled each to the column width.
     """
     y = 1.0
     for title, handles, labels in blocks:
         leg = ax.legend(handles, labels, title=title, loc='upper left',
-                        bbox_to_anchor=(1.02, y), fontsize=fontsize,
-                        title_fontsize=title_fontsize, frameon=True,
-                        framealpha=0.9, edgecolor='#cccccc',
+                        bbox_to_anchor=(1.03, y, width, 0.0), mode='expand',
+                        fontsize=fontsize, title_fontsize=title_fontsize,
+                        frameon=True, framealpha=0.9, edgecolor='#cccccc',
                         borderpad=0.5, labelspacing=0.4, handlelength=2.0)
-        if title is not None:
-            leg.get_title().set_ha('left')
         ax.add_artist(leg)
         # add_artist clips to the axes rectangle, which would hide a legend
         # placed outside it.
@@ -133,9 +137,12 @@ def main():
                     help='which set of relations to draw (default: verb-args)')
     ap.add_argument('--tick-step', type=int, default=None,
                     help='x-tick spacing; default adapts to the checkpoint count')
-    ap.add_argument('--figsize', default='4.6,3.1',
-                    help='axes size in inches, "W,H"; the legend is added to '
-                         'the right of this by the tight bounding box')
+    ap.add_argument('--figsize', default='6.3,3.1',
+                    help='whole-canvas size in inches, "W,H", legend strip '
+                         'included; the saved image is exactly this size')
+    ap.add_argument('--legend-width', type=float, default=0.40,
+                    help='legend box width as a fraction of the axes width, '
+                         'imposed on every block so all are equally wide')
     args = ap.parse_args()
 
     data = load(args.results_dir)
@@ -168,10 +175,14 @@ def main():
     ax.grid(True, color='#e0e0e0', linewidth=0.8)
     ax.set_facecolor('white')
 
-    fig.tight_layout()
-    stack_legends(fig, ax, blocks, fontsize=12, title_fontsize=11.5)
+    # A fixed axes rectangle rather than tight_layout, and a saved bounding
+    # box that is the whole canvas rather than a tight one: the image size
+    # then does not depend on how wide this figure's legend happens to be.
+    fig.subplots_adjust(left=0.105, right=0.695, top=0.975, bottom=0.155)
+    stack_legends(fig, ax, blocks, fontsize=12, title_fontsize=11.5,
+                  width=args.legend_width)
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(args.out, dpi=300, bbox_inches='tight')
+    fig.savefig(args.out, dpi=300)
     print(f'Saved to {args.out}')
 
 
