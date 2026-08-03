@@ -101,7 +101,11 @@ RELS="det ccomp neg cop aux vmod cc advcl nsubj dobj xcomp pcomp auxpass amod po
 
 # fig:dependencies1, fig:dependencies2
 $PY scripts/plot_selected_relations.py --results-dir $B/results-convB \
-    --out $B/figures/selected_uuas_by_relation.png --model-label "BERT-base"
+    --relation-set verb-args --model-label "BERT-base" \
+    --out $B/figures/selected_uuas_by_relation.png
+$PY scripts/plot_selected_relations.py --results-dir $B/results-convB \
+    --relation-set performance --model-label "BERT-base" \
+    --out $B/figures/selected_uuas_by_relation_2.png
 
 # fig:R2-log-distance-model, restricted to the relations the text discusses
 $PY scripts/figures/regression_uas_vs_log_distance.py --curves $NPZ \
@@ -121,8 +125,8 @@ $PY scripts/figures/cluster_relations_by_distance.py --curves $NPZ \
 # fig:dependencies-shuffled
 $PY scripts/plot_selected_relations.py \
     --results-dir experiments/roberta-shufflen1-prd/results \
-    --out experiments/roberta-shufflen1-prd/figures/selected_uuas_by_relation.png \
-    --model-label "RoBERTa-Shuffle-n1"
+    --relation-set performance --model-label "RoBERTa-Shuffle-n1" \
+    --out experiments/roberta-shufflen1-prd/figures/selected_uuas_by_relation.png
 ```
 
 Every script lives under `scripts/`; `experiments/` holds only the manifest, the
