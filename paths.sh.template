@@ -21,6 +21,12 @@ export LD_LIBRARY_PATH=/path/to/conda/envs/sp-env/lib:${LD_LIBRARY_PATH:-}
 CONDA_INIT=/path/to/mamba/etc/profile.d/conda.sh
 CONDA_ENV=sp-env
 
+# SLURM account the jobs are charged to. sbatch reads this from the submitting
+# environment, so the drivers carry no #SBATCH --account line and this is the
+# only place the account is named. Source this file before sbatch, or pass
+# --account= on the sbatch command line.
+export SBATCH_ACCOUNT=your-slurm-account
+
 # PTB3-WSJ CoNLL-X splits: ptb3-wsj-{train,dev,test}.conllx
 DATA_DIR=/path/to/training-data/
 

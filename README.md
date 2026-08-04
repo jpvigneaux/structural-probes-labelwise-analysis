@@ -1,12 +1,16 @@
-# Label-wise analysis of structural probes' performance
+# Representation of syntax in LLMs through the lens of linear distance and similarity-aware entropy
 
-Code and saved results for the paper *"Label-wise analysis of structural
-probes' performance."* The paper disaggregates the structural probe of
+Code and saved results for the paper *"Representation of syntax in LLMs through
+the lens of linear distance and similarity-aware entropy."* The paper
+disaggregates the structural probe of
 [Hewitt & Manning (2019)](https://nlp.stanford.edu/pubs/hewitt2019structural.pdf)
-by dependency relation — computing a labeled attachment score (ULAS) per
-relation — and analyses which factors (arc length, relation frequency,
-similarity-corrected head entropy) predict how well each relation is
-reconstructed.
+by dependency relation — computing an undirected attachment score by label
+(UASL) for each relation — and identifies the factors that predict how well
+each relation is reconstructed: the mean and the dispersion of the log linear
+distance between head and dependent, and the similarity-aware entropy of the
+relation's head. The analysis is repeated on six probing runs spanning encoders
+and decoders, sequential and parallel blocks, and a model pre-trained on
+permuted sentences.
 
 This repository is a self-contained extract of a larger working repository: it
 contains **only** the code, configuration, and saved outputs needed to
@@ -35,31 +39,39 @@ anything.
 
 | Paper artifact | Script |
 |---|---|
-| `fig:dependencies1`, `fig:dependencies2` — ULAS by relation | [`scripts/plot_selected_relations.py`](scripts/plot_selected_relations.py) |
+| `fig:dependencies1`, `fig:dependencies2` — UASL by relation | [`scripts/plot_selected_relations.py`](scripts/plot_selected_relations.py) |
 | `fig:dependencies-shuffled` — the same for RoBERTa-Shuffle-n1 | same, on the `shufflen1` run |
-| `fig:performance-as-a-function-of-distance` — mean ULAS vs arc length | [`scripts/figures/uuas_mean_curves_by_checkpoint.py`](scripts/figures/uuas_mean_curves_by_checkpoint.py) → [`uuas_mean_curves_png.py`](scripts/figures/uuas_mean_curves_png.py) |
+| `fig:performance-as-a-function-of-distance` — mean UASL vs linear distance | [`scripts/figures/uuas_mean_curves_by_checkpoint.py`](scripts/figures/uuas_mean_curves_by_checkpoint.py) → [`uuas_mean_curves_png.py`](scripts/figures/uuas_mean_curves_png.py) |
 | `fig:R2-log-distance-model` — R² heat map, log-linear decay | [`scripts/figures/regression_uas_vs_log_distance.py`](scripts/figures/regression_uas_vs_log_distance.py) `--relations` |
 | `fig:ulas-vs-log-distance` — the data behind it, at checkpoint 16 | [`scripts/figures/ulas_vs_log_distance_curves.py`](scripts/figures/ulas_vs_log_distance_curves.py) |
-| `fig:ULAS-only-dendrogram` — relation dendrogram, α = 1 | [`scripts/figures/cluster_relations_by_distance.py`](scripts/figures/cluster_relations_by_distance.py) `--alpha 1.0` |
-| `fig:head-sim-entropy` — held-out ULAS vs head entropy, BERT-base | [`scripts/plot_predictor_grid.py`](scripts/plot_predictor_grid.py) `--panel head_sim_entropy --ulas test` |
-| held-out R² and leave-one-relation-out Q² (§Entropy analysis) | [`scripts/regression/holdout_predictivity.py`](scripts/regression/holdout_predictivity.py) |
+| `fig:UASL-only-dendrogram` — relation dendrogram, α = 1 | [`scripts/figures/cluster_relations_by_distance.py`](scripts/figures/cluster_relations_by_distance.py) `--alpha 1.0` |
+| `fig:head-sim-entropy` — held-out UASL vs head entropy, BERT-base | [`scripts/plot_predictor_grid.py`](scripts/plot_predictor_grid.py) `--panel head_sim_entropy --ulas test` |
+| `fig:decay-across-models` — mean UASL vs linear distance, five models at their optima | [`scripts/figures/curves_across_models.py`](scripts/figures/curves_across_models.py) |
 | `tab:regression_results` — the three-predictor WLS regression | [`scripts/regression/ptb_wls_regression.py`](scripts/regression/ptb_wls_regression.py) |
+| `tab:models` — the six runs and their architectures | [`experiments/paper_runs.yaml`](experiments/paper_runs.yaml) (transcribed by hand) |
 
 ### Appendices
 
 | Paper artifact | Script |
 |---|---|
-| `tab:arc-len-90` — 90th-percentile arc length | [`scripts/figures/cluster_relations_by_distance.py`](scripts/figures/cluster_relations_by_distance.py) |
+| `tab:edge-counts` — gold edges per relation and split | [`scripts/compute_uuas_by_relation.py`](scripts/compute_uuas_by_relation.py) |
+| `fig:R2-all-relations` — the R² heat map over every relation | [`scripts/figures/regression_uas_vs_log_distance.py`](scripts/figures/regression_uas_vs_log_distance.py) |
+| `tab:arc-len-90` — 90th-percentile linear distance | [`scripts/figures/cluster_relations_by_distance.py`](scripts/figures/cluster_relations_by_distance.py) |
 | `fig:dendrogram_relations`, `fig:dendrogram_w1` — four-panel dendrograms over α | same, `--range-metric p90` / `w1` |
 | `tab:other-models` — the regression, repeated on five models | [`scripts/regression/ptb_wls_regression.py`](scripts/regression/ptb_wls_regression.py) per run |
 | `fig:app-selected`, `fig:app-curves`, `fig:app-r2a`, `fig:app-r2b`, `fig:app-dendro` | [`experiments/drivers/08_figures.sh`](experiments/drivers/08_figures.sh) per run |
-| `fig:predictor-grid` — predictors against held-out ULAS | [`scripts/plot_predictor_grid.py`](scripts/plot_predictor_grid.py) `--ulas test` |
+| `fig:predictor-grid` — predictors against held-out UASL | [`scripts/plot_predictor_grid.py`](scripts/plot_predictor_grid.py) `--ulas test` |
 | `tab:moment-ladder` — does dispersion or skew pay for itself? | [`scripts/regression/add_length_spread.py`](scripts/regression/add_length_spread.py) |
-| sd vs variance (Appendix "Standard deviation, not variance") | [`scripts/regression/compare_dispersion_scale.py`](scripts/regression/compare_dispersion_scale.py) |
-| mean(log n) vs log(mean n) (same appendix) | [`scripts/regression/compare_length_predictors.py`](scripts/regression/compare_length_predictors.py) |
+| sd vs variance (Appendix "Encoding linear distance in the regression") | [`scripts/regression/compare_dispersion_scale.py`](scripts/regression/compare_dispersion_scale.py) |
+| mean(log δ) vs log(mean δ) (same appendix) | [`scripts/regression/compare_length_predictors.py`](scripts/regression/compare_length_predictors.py) |
 | `tab:shuffled-regression`, `fig:app-shuffled-curves`, `fig:app-shuffled-r2` | the same scripts, on the `shufflen1` run |
-| the reliability ceiling (Appendix "not a floor effect") | [`scripts/regression/ulas_reliability.py`](scripts/regression/ulas_reliability.py) |
-| the similarity-corrected entropy predictor | [`scripts/regression/contextual_sim_entropy.py`](scripts/regression/contextual_sim_entropy.py) |
+| the contextual-embedding robustness check (§Entropy analysis) | [`scripts/regression/contextual_sim_entropy.py`](scripts/regression/contextual_sim_entropy.py) |
+
+Two analyses are kept here that the current paper no longer reports: the
+reliability ceiling ([`ulas_reliability.py`](scripts/regression/ulas_reliability.py))
+and held-out R² with leave-one-relation-out Q²
+([`holdout_predictivity.py`](scripts/regression/holdout_predictivity.py)). They
+still run, and `fig:head-sim-entropy` uses the held-out UASL they established.
 
 ### Checking that it reproduced
 
@@ -77,7 +89,7 @@ for which, and why they were wrong.
 
 The `.npz` referenced by the figure scripts is
 `experiments/bert-base-prd/figures/uuas_mean_curves_by_checkpoint.npz`,
-the per-relation ULAS-by-distance curves for all checkpoints. It is written by
+the per-relation UASL-by-distance curves for all checkpoints. It is written by
 `uuas_mean_curves_by_checkpoint.py` (which needs the PTB corpus) and is bundled
 here, so the regression, dendrogram, and range analyses downstream of it
 reproduce **without** any external data.
@@ -116,7 +128,7 @@ $PY scripts/figures/ulas_vs_log_distance_curves.py --curves $CK16 --checkpoint 1
     --relations $RELS --model-label "BERT-base" \
     --out $B/figures/ulas_vs_log_distance_ck16.png
 
-# fig:ULAS-only-dendrogram, then fig:dendrogram_relations (four panels over alpha)
+# fig:UASL-only-dendrogram, then fig:dendrogram_relations (four panels over alpha)
 $PY scripts/figures/cluster_relations_by_distance.py --curves $NPZ --alpha 1.0 \
     --out $B/figures/relation_clustering_1panel.png
 $PY scripts/figures/cluster_relations_by_distance.py --curves $NPZ \
@@ -132,7 +144,7 @@ $PY scripts/plot_selected_relations.py \
 Every script lives under `scripts/`; `experiments/` holds only the manifest, the
 drivers, and saved outputs. There is one copy of each analysis, not two.
 
-**One BERT-base run is bundled**, `results-convB` (peak dev ULAS 0.815), and
+**One BERT-base run is bundled**, `results-convB` (peak dev UASL 0.815), and
 every BERT-base number and figure in the paper comes from it. An earlier run
 under a different LayerNorm convention was previously shipped alongside it and
 supplied one figure; that split has been removed, so nothing in the paper mixes
@@ -155,11 +167,11 @@ Requires the external data described below, and covers all six probing runs.
 2. **Fill in `paths.yaml` and `paths.sh`** from the templates (see
    [Configuring paths](#configuring-paths)); `roots:` is where your output goes.
 3. **Corpus statistics, once:** `sbatch experiments/drivers/06_predictors.sh`.
-   These are identical for every model — only the ULAS values differ between
+   These are identical for every model — only the UASL values differ between
    rows of `tab:other-models`.
 4. **Each run:** `experiments/drivers/submit_all.sh <run> <results-dir>`, which
    submits extraction → LayerNorm convention → alignment → probe training →
-   per-relation ULAS → tables → figures with the SLURM dependencies wired up and
+   per-relation UASL → tables → figures with the SLURM dependencies wired up and
    the array bounds derived from the run's own checkpoint count.
    ```bash
    for r in bertbase deberta modernbert gpt2 gptj shufflen1; do
@@ -168,8 +180,11 @@ Requires the external data described below, and covers all six probing runs.
    ```
 5. **Verify:** `sbatch experiments/drivers/09_verify.sh`.
 
-Account `p33044` is capped at 8 concurrent GPU jobs, so the training arrays are
-throttled to 6 and a long pending queue is expected rather than a fault.
+The drivers carry no `#SBATCH --account`: set `SBATCH_ACCOUNT` in `paths.sh`
+(git-ignored) and source it before `sbatch`, or pass `--account=` on the command
+line. If your account caps concurrent GPU jobs — ours allows 8 — the training
+arrays are throttled to 6 and a long pending queue is expected rather than a
+fault.
 
 ---
 
@@ -266,7 +281,7 @@ structural-probes-labelwise-analysis/
 │   ├── convert_raw_to_*.py       #   extraction, one per model family
 │   ├── precompute_alignments_hf.py   # subword -> PTB alignment, any tokenizer
 │   ├── apply_consuming_layernorm.py  # LayerNorm convention A -> B
-│   ├── compute_uuas_by_relation.py   # per-relation ULAS
+│   ├── compute_uuas_by_relation.py   # per-relation UASL
 │   ├── make_probe_config.py      #   one probe config, from the manifest
 │   ├── regression/               #   the WLS regression and its comparisons
 │   ├── figures/                  #   curves, R² heat maps, dendrograms

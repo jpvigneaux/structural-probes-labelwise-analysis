@@ -7,7 +7,6 @@
 # read from the manifest: `3 5 ... 2L+1` for a 2+2L layout and `1 ... L` for a
 # 1+L one. Passing the wrong one silently mixes post-attention and post-block
 # states into a single series.
-#SBATCH --account=p33044
 #SBATCH --partition=short
 #SBATCH --job-name=figures
 #SBATCH --time=04:00:00
@@ -42,11 +41,11 @@ else
   REF_DESC="Best post-block checkpoint"
 fi
 
-echo "=== per-relation ULAS across checkpoints ==="
+echo "=== per-relation UASL across checkpoints ==="
 $PYTHON "$REPO/scripts/plot_selected_relations.py" --results-dir "$RESULTS_ROOT" \
   --out "$FIGS/selected_uuas_by_relation_$RUN.png" --model-label "$LABEL"
 
-echo "=== ULAS-by-arc-length curves (checkpoints: $POST_BLOCK) ==="
+echo "=== UASL-by-linear distance curves (checkpoints: $POST_BLOCK) ==="
 $PYTHON "$S/uuas_mean_curves_by_checkpoint.py" \
   --trained-probes-dir "$RESULTS_ROOT" --checkpoints $POST_BLOCK \
   --out "$FIGS/uuas_mean_curves_$RUN.html"

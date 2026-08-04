@@ -16,7 +16,6 @@
 #
 # Runs declaring convention A, or extracted as post-LN hidden_states, exit here
 # with nothing to do.
-#SBATCH --account=p33044
 #SBATCH --partition=short
 #SBATCH --job-name=convention
 #SBATCH --time=04:00:00

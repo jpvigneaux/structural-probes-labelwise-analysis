@@ -21,14 +21,14 @@ Range component (linguistic / corpus property), --range-metric:
 
   p90 (default)
     d_range = |n_p(r1) - n_p(r2)| / N_max
-    where n_p(r) is the count-weighted p-th percentile of the arc-length
+    where n_p(r) is the count-weighted p-th percentile of the linear distance
     distribution for relation r (same across checkpoints — corpus property).
     N_max = max_r n_p(r). This reduces each relation to one number, so two
     relations with the same 90th percentile are at distance zero however
-    differently their arc lengths are distributed below it.
+    differently their linear distances are distributed below it.
 
   w1
-    The Wasserstein-1 (earth-mover) distance between the arc-length
+    The Wasserstein-1 (earth-mover) distance between the linear distance
     distributions themselves, p_r(n), estimated by relative frequency over the
     gold arcs. For distributions on the integers with ground metric |n1 - n2|,
 
@@ -101,7 +101,7 @@ def compute_dist_uas(npz, n_rel, n_ck, min_overlap):
 
 
 def compute_dist_range(n_pct, n_rel, n_max):
-    """Normalised absolute difference of count-weighted percentile arc lengths."""
+    """Normalised absolute difference of count-weighted percentile linear distances."""
     dist = np.zeros((n_rel, n_rel))
     for i in range(n_rel):
         for j in range(i + 1, n_rel):
@@ -113,7 +113,7 @@ def compute_dist_range(n_pct, n_rel, n_max):
 
 
 def arc_length_cdfs(npz, n_rel):
-    """Empirical CDFs of each relation's arc-length distribution.
+    """Empirical CDFs of each relation's linear distance distribution.
 
     The NPZ stores each relation's distribution sparsely, as the observed arc
     lengths `rel_all_ns_{ri}` with their gold counts `rel_counts_{ri}`. Expand
@@ -142,7 +142,7 @@ def arc_length_cdfs(npz, n_rel):
 
 
 def compute_dist_wasserstein(npz, n_rel):
-    """Wasserstein-1 distance between the relations' arc-length distributions.
+    """Wasserstein-1 distance between the relations' linear distance distributions.
 
     For distributions supported on the integers with ground metric |n1 - n2|,
     W1 equals the L1 distance between the cumulative distribution functions,
@@ -219,9 +219,9 @@ def parse_args():
     p.add_argument('--min-overlap', type=int, default=2)
     p.add_argument('--range-metric', choices=['p90', 'w1'], default='p90',
                    help="'p90': absolute difference of count-weighted "
-                        "percentile arc lengths (the published choice). "
+                        "percentile linear distances (the published choice). "
                         "'w1': Wasserstein-1 distance between the full "
-                        "arc-length distributions.")
+                        "linear distance distributions.")
     p.add_argument('--figsize', default=None, metavar='W,H',
                    help='Figure size in inches, overriding the default '
                         '(4.5,11 single-panel; 10,14 four-panel). Use a shorter '
@@ -339,7 +339,7 @@ def main():
         fig.suptitle(
             f'Hierarchical clustering of dependency relations\n'
             f'(α={alphas[0]:.2f}, '
-            f'{"W1 arc-length" if args.range_metric == "w1" else f"{args.pct:.0f}th-pct"}'
+            f'{"W1 linear distance" if args.range_metric == "w1" else f"{args.pct:.0f}th-pct"}'
             f' range, all checkpoints, test set)',
             fontsize=12, y=1.01,
         )

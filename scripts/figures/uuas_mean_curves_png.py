@@ -39,7 +39,7 @@ def parse_args():
                    help='Output PNG path (default: same stem as --curves)')
     p.add_argument('--dpi', type=int, default=300)
     p.add_argument('--log-x', action='store_true',
-                   help='Plot ln(n+1) on the x-axis instead of n')
+                   help='Plot ln(delta) on the x-axis instead of delta')
     p.add_argument('--ref-checkpoint', type=int, default=16,
                    help='Checkpoint highlighted in the lower panel: the optimal '
                         'probe for the model in question (BERT-base 16, '
@@ -56,7 +56,7 @@ def parse_args():
 
 
 def transform_x(xs, log_x):
-    return np.log(xs + 1) if log_x else xs
+    return np.log(xs) if log_x else xs
 
 
 def describe_checkpoints(cks):
@@ -97,7 +97,7 @@ def style_ax(ax, log_x=False):
     ax.tick_params(labelsize=7)
     ax.grid(axis='y', linewidth=0.4, alpha=0.4)
     ax.spines[['top', 'right']].set_visible(False)
-    ax.set_ylabel('Mean labeled UAS', fontsize=8)
+    ax.set_ylabel('Mean UASL', fontsize=8)
 
 
 def main():
@@ -178,7 +178,7 @@ def main():
     # 9, ModernBERT 30, GPT-2 16, GPT-J 8), so a fixed '3 – 25' / '16' title
     # was wrong for four of the five.
     prefix = f'{args.model_label}: ' if args.model_label else ''
-    ax_top.set_title(f'{prefix}post-block checkpoints '
+    ax_top.set_title(f'{prefix}post-block residual stream checkpoints '
                      f'({describe_checkpoints(main_cks)})', fontsize=8, pad=4)
     ax_top.tick_params(labelbottom=False)   # x labels hidden (shared axis)
 
@@ -188,7 +188,7 @@ def main():
                color_16, label=str(ref_ck))
 
     style_ax(ax_bot, args.log_x)
-    xlabel = r'$\ln(n+1)$' if args.log_x else '$n$ (words between endpoints)'
+    xlabel = r'$\ln \delta$' if args.log_x else r'$\delta$ (linear distance, in words)'
     ax_bot.set_xlabel(xlabel, fontsize=8)
     ax_bot.set_title(f'{args.ref_desc} ({ref_ck})', fontsize=8, pad=4)
 
@@ -196,7 +196,7 @@ def main():
     fig.legend(
         handles=handles,
         labels=[str(ck) for ck in main_cks],
-        title='Checkpoint',
+        title='Residual stream checkpoint',
         title_fontsize=7,
         fontsize=7,
         loc='lower center',

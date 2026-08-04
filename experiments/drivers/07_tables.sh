@@ -6,7 +6,6 @@
 # Produces, in order: Table 1 / the cross-model table row; the moment ladder;
 # the standard-deviation-versus-variance comparison; and mean(log n) versus
 # log(mean n). Run 09_verify.sh afterwards to diff the lot against the paper.
-#SBATCH --account=p33044
 #SBATCH --partition=short
 #SBATCH --job-name=tables
 #SBATCH --time=00:20:00
@@ -48,7 +47,7 @@ echo; echo "############ mean(log n) vs log(mean n) ############"
 $PYTHON "$REPO/scripts/regression/compare_length_predictors.py" \
   -uuas "$U" -sim "$SIM" -len "$LEN" --label "$LABEL"
 
-echo; echo "############ how much of the ULAS spread is real, not sampling noise? ############"
+echo; echo "############ how much of the UASL spread is real, not sampling noise? ############"
 $PYTHON "$REPO/scripts/regression/ulas_reliability.py" \
   --spec "$LABEL:$RESULTS_ROOT:$OPT_CK"
 echo "=== done ==="

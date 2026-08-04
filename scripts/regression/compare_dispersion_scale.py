@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Should dispersion of log arc length enter as the variance or the SD?
+"""Should dispersion of log linear distance enter as the variance or the SD?
 
 The Taylor expansion that motivates a dispersion term,
 

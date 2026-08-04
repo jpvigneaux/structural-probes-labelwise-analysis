@@ -36,7 +36,7 @@ lands one unit high when the fourth decimal is a 5:
 | BERT-base, R² (3 predictors) | 0.736 | 0.735483 | 0.735 |
 | BERT-base, R² with mean(log n) | 0.694 | 0.693470 | 0.693 |
 | DeBERTa-v3-base, R² with variance | 0.585 | 0.584492 | 0.584 |
-| GPT-2-base, peak dev ULAS | 0.776 | 0.775456 | 0.775 |
+| GPT-2-base, peak dev UASL | 0.776 | 0.775456 | 0.775 |
 | GPT-J-6B, R² with variance | 0.733 | 0.732454 | 0.732 |
 
 The verifier still distinguishes double rounding from a genuine mismatch, and
@@ -174,7 +174,7 @@ than trained.
 
 ---
 
-## 3. Per-relation ULAS
+## 3. Per-relation UASL
 
 ```bash
 python scripts/compute_uuas_by_relation.py --results-dir RESULTS --layers 0-25
@@ -189,7 +189,7 @@ embeddings are never loaded.
 ## 4. The WLS regression
 
 The published model has three predictors: the similarity-corrected entropy of the
-relation's head, the mean of the log arc lengths, and their standard deviation.
+relation's head, the mean of the log linear distances, and their standard deviation.
 Two drivers cover the whole of it — the corpus statistics once, then every
 regression the paper reports, per run:
 
@@ -201,7 +201,7 @@ RUN=bertbase sbatch experiments/drivers/07_tables.sh             # per run
 The individual scripts, which is what those drivers call. Three inputs, all on PTB:
 
 ```bash
-# (a) arc-length moments per relation: mean_length, mean_log_length,
+# (a) linear distance moments per relation: mean_length, mean_log_length,
 #     stdev_log_length and skew_log_length -- location, dispersion, asymmetry
 python scripts/regression/arc_length_moments.py \
     $DATA_DIR/ptb3-wsj-train.conllx --output dep-lengths-ptb.tsv
@@ -232,7 +232,7 @@ between these three files, differing only in which columns they build.
 `scripts/verify_paper_numbers.py` uses it — so if one of those copies ever drifts
 from the others, the verification pass is what notices.
 
-### How arc length enters the regression
+### How linear distance enters the regression
 
 Three parametrisation choices sit behind `mean(log n)` and `sd(log n)`, each
 with a script that reproduces the comparison (all five models, identical data
@@ -254,7 +254,7 @@ python scripts/regression/compare_diversity_normalisation.py -uuas ... -sim ... 
 ```
 
 The last of these answers a question about the diversity predictor rather than
-about arc length. The paper defines it as `H_sim = -sum_x p(x) log2 sum_y Z_xy p(y)`,
+about linear distance. The paper defines it as `H_sim = -sum_x p(x) log2 sum_y Z_xy p(y)`,
 with no normalisation, and that is what `contextual_sim_entropy.py` computes.
 Dividing the log-argument by `zpp = sum_x sum_y Z_xy p(x) p(y)` — which makes the
 measure invariant to a relation's overall similarity level — is a defensible
@@ -270,9 +270,9 @@ A fourth script bears on how the regression should be *read* rather than on how
 it is specified:
 
 ```bash
-# what share of the between-relation variance in ULAS is real, not sampling
+# what share of the between-relation variance in UASL is real, not sampling
 # noise? This caps the attainable R^2, and matters when comparing a model whose
-# ULAS is high and well spread with one sitting near a floor.
+# UASL is high and well spread with one sitting near a floor.
 python scripts/regression/ulas_reliability.py \
     --spec "BERT-base:RESULTS:16" --spec "RoBERTa-Shuffle-n1:RESULTS_SHUF:9"
 ```
@@ -285,7 +285,7 @@ A fifth asks whether the regression predicts rather than merely fits, which with
 42 observations and three predictors is a fair question to put to it:
 
 ```bash
-# fit on dev ULAS, then score on (a) the same relations re-measured on the test
+# fit on dev UASL, then score on (a) the same relations re-measured on the test
 # section and (b) relations left out of the fit entirely
 python scripts/regression/holdout_predictivity.py \
     --spec "BERT-base:RESULTS:16" --spec "RoBERTa-Shuffle-n1:RESULTS_SHUF:9" \
@@ -313,7 +313,7 @@ and fixes the sign without committing to a parametrisation.
 
 Corpus statistics are computed on **PTB train**: entropy estimates on the
 1.7k-sentence dev split would be badly biased, and using train keeps the
-predictors independent of the split the ULAS is measured on.
+predictors independent of the split the UASL is measured on.
 
 ### Why the entropy predictor is computed the way it is
 
@@ -348,15 +348,15 @@ RUN=modernbert sbatch experiments/drivers/08_figures.sh
 The individual scripts:
 
 ```bash
-# per-relation ULAS across checkpoints
+# per-relation UASL across checkpoints
 python scripts/plot_selected_relations.py --results-dir RESULTS \
     --out fig.png --model-label "GPT-2-base"
 
-# entropy vs ULAS scatter
+# entropy vs UASL scatter
 python scripts/plot_head_sim_vs_ulas.py --uuas RESULTS/layer-16/dev.uuas_by_relation \
     --sim results_sim_ptb.tsv --out fig.png --model-label "BERT-base (ckpt 16)"
 
-# ULAS-by-distance curves -> NPZ, which feeds the next two
+# UASL-by-distance curves -> NPZ, which feeds the next two
 python scripts/figures/uuas_mean_curves_by_checkpoint.py \
     --trained-probes-dir RESULTS --checkpoints 3 5 7 9 11 13 15 17 19 21 23 25 \
     --out curves.html
@@ -388,7 +388,7 @@ python scripts/figures/cluster_relations_by_distance.py --curves curves.npz \
     --range-metric w1 --out dendrogram_4panel_w1.png
 
 # diagnostics for that choice: cophenetic correlation, fragmentation, and
-# agreement with the pure-ULAS endpoint, per metric and per alpha
+# agreement with the pure-UASL endpoint, per metric and per alpha
 python scripts/figures/compare_range_metrics.py --curves curves.npz
 ```
 
@@ -452,11 +452,11 @@ the intrinsic-resolution hint.
 ### Range component of the composite distance
 
 `cluster_relations_by_distance.py --range-metric` chooses how two relations are
-compared by the arc lengths they take in the corpus:
+compared by the linear distances they take in the corpus:
 
 - `p90` (default, the published choice): absolute difference of count-weighted
-  90th-percentile arc lengths, normalised by the largest.
-- `w1`: Wasserstein-1 distance between the arc-length distributions themselves,
+  90th-percentile linear distances, normalised by the largest.
+- `w1`: Wasserstein-1 distance between the linear distance distributions themselves,
   computed exactly as `sum_n |F1(n) - F2(n)|` on the integer grid, in words.
 
 `w1` is the better measurement — it fixes the percentile's instability on
@@ -493,7 +493,7 @@ Its tokenizer is `roberta-base`'s, so it shares that alignment directory.
 Calling the scripts directly:
 
 ```bash
-# per-relation ULAS at every checkpoint (CPU)
+# per-relation UASL at every checkpoint (CPU)
 python scripts/compute_uuas_by_relation.py --results-dir RESULTS_SHUF --layers 0-12
 
 # curves NPZ -> R^2 heat map (RoBERTa is a 1+L layout: checkpoints 1..12)
@@ -508,9 +508,9 @@ python scripts/regression/ptb_wls_regression.py \
     -sim sim_static_fasttext.tsv -len dep-lengths-ptb.tsv --label "RoBERTa-Shuffle-n1"
 ```
 
-Expected outcome: peak dev ULAS 0.093 (BERT-base 0.815); median `R^2` of the
+Expected outcome: peak dev UASL 0.093 (BERT-base 0.815); median `R^2` of the
 log-linear decay model 0.102 (0.777); regression `R^2` 0.195 (0.735) with the
-arc-length coefficient reduced to -0.002 from -0.252 and both the diversity and
+linear distance coefficient reduced to -0.002 from -0.252 and both the diversity and
 dispersion coefficients reversed in sign. Sampling noise attenuates coefficients
 but cannot reverse them, so the sign changes are not a noise artefact — see
 `ulas_reliability.py` above.

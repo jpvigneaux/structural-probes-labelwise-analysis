@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Do higher moments of the arc-length distribution add explanatory power?
+"""Do higher moments of the linear distance distribution add explanatory power?
 
 The published model uses only the location of a relation's log-length
 distribution (`mean_log_length`). Its dispersion and asymmetry are natural
 further candidates, and there is an exact reason to test them. Let f(x) be the
 accuracy the probe attains on an edge of log length x, and X the log length of
-a random edge of a given relation, so the relation's ULAS is E[f(X)]. If f were
-exactly linear -- the log-linear decay model that the arc-length analysis shows
+a random edge of a given relation, so the relation's UASL is E[f(X)]. If f were
+exactly linear -- the log-linear decay model that the linear distance analysis shows
 to be imperfect -- then E[f(X)] = f(E[X]) identically and the mean would
 exhaust what the length distribution can contribute. It is not, so later
 moments may carry information. This script fits the corresponding nested

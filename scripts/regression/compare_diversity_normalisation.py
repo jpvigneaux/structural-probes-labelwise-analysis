@@ -15,7 +15,7 @@ the log-argument by the relation's mean within-relation similarity,
 which makes the quantity invariant to a relation's overall similarity level and
 measures only how unevenly that similarity is distributed. The two differ by an
 additive term that is NOT constant across relations -- relations whose heads are
-mutually similar have larger zpp -- so which one predicts ULAS better is an
+mutually similar have larger zpp -- so which one predicts UASL better is an
 empirical question, not a matter of convention.
 
 Three fits are compared, all with the same two companion predictors, the same 42

@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
-"""ULAS against log arc length, per relation, at one checkpoint.
+"""UASL against log linear distance, per relation, at one checkpoint.
 
 The R^2 heat map (regression_uas_vs_log_distance.py) says how well the
 log-linear decay model
 
-    ULAS_n(r, k) = a + b ln(n + 1)
+    ULAS_δ(r, k) = a + b ln(δ)
 
 fits each relation, but not what the failures look like. This draws the
-underlying data: for each relation, the observed ULAS at every arc length with
+underlying data: for each relation, the observed UASL at every linear distance with
 at least five gold edges, with the fitted line through it and its R^2. A
 relation the heat map scores low is then visibly low for a reason -- a curve
 that is flat, or humped, or noisy -- rather than merely having a small number
 attached to it.
 
 Drawn at a single checkpoint, because a relation's curve moves with depth and
-overlaying all of them would defeat the purpose. Use the checkpoint whose ULAS
+overlaying all of them would defeat the purpose. Use the checkpoint whose UASL
 the rest of the analysis refers to: the paper uses BERT-base checkpoint 16,
-which is where its peak ULAS, its regression and Table 1 all sit.
+which is where its peak UASL, its regression and Table 1 all sit.
 
 Relations are ordered by R^2, descending, so the panel order matches the heat
 map's row order and the two figures can be read side by side.
@@ -80,7 +80,7 @@ def main():
         if len(ns) < args.min_points:
             panels.append((rel, ns, uas, None))
             continue
-        panels.append((rel, ns, uas, stats.linregress(np.log(ns + 1), uas)))
+        panels.append((rel, ns, uas, stats.linregress(np.log(ns), uas)))
     panels.sort(key=lambda t: (t[3].rvalue ** 2) if t[3] else -1, reverse=True)
 
     ncols = min(args.ncols, len(panels))
@@ -94,7 +94,7 @@ def main():
     axes = np.atleast_1d(axes).ravel()
 
     for ax, (rel, ns, uas, fit) in zip(axes, panels):
-        x = np.log(ns + 1)
+        x = np.log(ns)
         ax.scatter(x, uas, s=args.marker_size, color='#08306B', zorder=3, alpha=0.85)
         if fit is not None:
             xs = np.linspace(x.min(), x.max(), 50)
@@ -117,12 +117,12 @@ def main():
 
     # One label per edge rather than per panel.
     for ax in axes[len(panels) - ncols:len(panels)]:
-        ax.set_xlabel(r'$\ln(n+1)$', fontsize=args.label_font)
+        ax.set_xlabel(r'$\ln \delta$', fontsize=args.label_font)
     for ax in axes[::ncols]:
-        ax.set_ylabel('ULAS', fontsize=args.label_font)
+        ax.set_ylabel('UASL', fontsize=args.label_font)
 
     if args.model_label:
-        fig.suptitle(f'{args.model_label}, checkpoint {args.checkpoint}',
+        fig.suptitle(f'{args.model_label}, residual stream checkpoint {args.checkpoint}',
                      fontsize=args.label_font + 1.5, y=0.995)
     fig.tight_layout(rect=(0, 0, 1, 0.98 if args.model_label else 1.0))
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
@@ -130,8 +130,8 @@ def main():
     print(f'Saved → {args.out}')
     for rel, ns, uas, fit in panels:
         r2 = f'{fit.rvalue ** 2:.3f}' if fit else '  n/a'
-        print(f'  {rel:<10s} R^2 = {r2}   {len(ns):2d} arc lengths, '
-              f'ULAS {uas.min():.3f}-{uas.max():.3f}')
+        print(f'  {rel:<10s} R^2 = {r2}   {len(ns):2d} linear distances, '
+              f'UASL {uas.min():.3f}-{uas.max():.3f}')
 
 
 if __name__ == '__main__':

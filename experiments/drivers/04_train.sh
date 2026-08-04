@@ -7,10 +7,9 @@
 #   manifest.py $RUN extraction.n_checkpoints  ->  N,  so --array=0-$((N-1))
 # submit_all.sh works this out for you.
 #
-# Account p33044 is capped at 8 concurrent GPU jobs, so a long pending queue is
+# The account is capped at 8 concurrent GPU jobs, so a long pending queue is
 # expected and is not a scheduling fault. Add %6 to the array spec to stay well
 # inside the cap when other work is running.
-#SBATCH --account=p33044
 #SBATCH --partition=gengpu
 #SBATCH --gres=gpu:1
 #SBATCH --job-name=probe

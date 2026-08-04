@@ -3,7 +3,7 @@
 
 `experiments/paper_runs.yaml` lists the six probing runs behind the article
 together with the values published for each. This script refits each regression
-from the same per-relation ULAS files and corpus statistics the paper used, and
+from the same per-relation UASL files and corpus statistics the paper used, and
 prints a line per claim with the published value, the recomputed value and how
 that value rounds at the paper's precision.
 
@@ -69,7 +69,7 @@ def peak_ulas(results_dir):
 
 
 def reliability(df):
-    """Share of the weighted between-relation variance of ULAS that is not
+    """Share of the weighted between-relation variance of UASL that is not
     binomial sampling noise; caps the attainable R^2. See ulas_reliability.py."""
     p = df['uuas'].to_numpy(float)
     n = df['total'].to_numpy(float)
@@ -162,14 +162,14 @@ def verify_run(key, run, roots, predictors, rep, verbose):
 
     uuas_path = Path(results) / f'layer-{ck:02d}' / 'dev.uuas_by_relation'
     if not uuas_path.exists():
-        rep.rows.append((label, 'per-relation ULAS file', 0.0, None, 1, 'FAIL'))
+        rep.rows.append((label, 'per-relation UASL file', 0.0, None, 1, 'FAIL'))
         return
 
     df = load_regression_frame(uuas_path, predictors['sim'], predictors['length'])
 
-    # --- peak ULAS and the checkpoint attaining it --------------------------
+    # --- peak UASL and the checkpoint attaining it --------------------------
     peak, peak_ck = peak_ulas(results)
-    rep.check(label, 'peak dev ULAS', pub.get('peak_ulas'), peak)
+    rep.check(label, 'peak dev UASL', pub.get('peak_ulas'), peak)
     if peak_ck != ck:
         rep.rows.append((label, 'optimal checkpoint', float(ck),
                          float(peak_ck), 0, 'FAIL'))
@@ -230,7 +230,7 @@ def verify_run(key, run, roots, predictors, rep, verbose):
                              float(len(ho) + len(dropped)), 0, 'FAIL'))
 
     # --- reliability ceiling --------------------------------------------------
-    rep.check(label, 'ULAS reliability', pub.get('reliability'), reliability(df))
+    rep.check(label, 'UASL reliability', pub.get('reliability'), reliability(df))
 
     # --- median R^2 of the log-linear decay model ----------------------------
     if 'median_r2_loglinear' in pub:

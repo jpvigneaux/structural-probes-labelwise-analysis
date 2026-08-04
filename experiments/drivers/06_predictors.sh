@@ -5,13 +5,12 @@
 #
 # Both are computed on PTB *train*. Entropy estimated on the 1.7k-sentence dev
 # split would be badly biased, and using train keeps the predictors independent
-# of the split ULAS is measured on. They are identical for every row of the
-# cross-model table -- only the ULAS values differ between models.
+# of the split UASL is measured on. They are identical for every row of the
+# cross-model table -- only the UASL values differ between models.
 #
 # 72G is measured, not guessed: the entropy step holds a dense per-relation
 # block of 300-dimensional vectors for the largest relation. Memory requests
 # count against the fairshare score, so do not round this up "to be safe".
-#SBATCH --account=p33044
 #SBATCH --partition=short
 #SBATCH --job-name=predictors
 #SBATCH --time=03:00:00

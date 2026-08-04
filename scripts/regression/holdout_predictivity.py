@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Does the regression predict ULAS, or only describe the split it was fitted on?
+"""Does the regression predict UASL, or only describe the split it was fitted on?
 
 The regression of the paper is fitted on 42 numbers with three predictors, which
 invites the question of whether its R^2 is a measure of anything beyond its own
 flexibility. There are two separate ways it could fail, and they need separate
 tests, because a figure that answers one says nothing about the other.
 
-  Held-out edges.  Fit on dev ULAS, then predict the ULAS of the same relations
+  Held-out edges.  Fit on dev UASL, then predict the UASL of the same relations
     as re-measured on the test split. This asks whether the fit is tracking the
-    relations or the particular sample of dev edges their ULAS was computed
+    relations or the particular sample of dev edges their UASL was computed
     from. The predictors come from ptb3-wsj-train.conllx, so train, dev and test
     are disjoint and nothing about the test edges enters the fit.
 
@@ -20,7 +20,7 @@ Both are reported as weighted R^2 against the weighted mean, 1 - SSres/SStot, so
 a model no better than the intercept scores 0 and a worse one scores below 0 --
 unlike a squared correlation, which cannot.
 
-The two numbers should be read together with r(dev, test): dev and test ULAS are
+The two numbers should be read together with r(dev, test): dev and test UASL are
 two measurements of one quantity, so a high held-out-edge R^2 is partly assured
 in advance, and the smaller that correlation the more the first test is telling
 you.
@@ -61,7 +61,7 @@ def weighted_r2(y, yhat, w):
 
 
 def heldout_frame(results, ck, sim_path, len_path):
-    """The regression's own frame, with the test-split ULAS joined on.
+    """The regression's own frame, with the test-split UASL joined on.
 
     The development side comes from load_regression_frame, so this is the same
     join the regression itself uses and cannot drift from it. Relations with no
