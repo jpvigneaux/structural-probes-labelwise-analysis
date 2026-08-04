@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plot per-relation ULAS against checkpoint index for a selected subset of relations.
+"""Plot per-relation UASL against checkpoint index for a selected subset of relations.
 
 Generalised from experiments/bert-base-prd/figures/plot_selected_relations.py,
 which hard-coded BERT-base's results directory, output path and x-axis label.
@@ -8,7 +8,7 @@ model in the comparison (BERT-base, DeBERTa-v3-base, ModernBERT-base, GPT-2,
 GPT-J) and the appendix figures stay directly comparable to the main-text one.
 
 Reads `training_uuas_by_relation.tsv` from each `layer-NN/` directory and takes,
-per checkpoint, the epoch with the highest overall (micro-averaged) ULAS.
+per checkpoint, the epoch with the highest overall (micro-averaged) UASL.
 
 Usage:
     python plot_selected_relations.py --results-dir RESULTS \
@@ -166,8 +166,8 @@ def main():
         if handles:
             blocks.append((title, handles, labels))
 
-    ax.set_xlabel(f'{args.model_label} checkpoint index', fontsize=13)
-    ax.set_ylabel('ULAS (optimal epoch)', fontsize=13)
+    ax.set_xlabel(f'{args.model_label} residual stream checkpoint', fontsize=13)
+    ax.set_ylabel('UASL (optimal epoch)', fontsize=13)
     ax.set_xlim(layers[0] - 0.5, layers[-1] + 0.5)
     ax.set_ylim(0, 1.02)
     ax.set_xticks(range(layers[0], layers[-1] + 1, step))

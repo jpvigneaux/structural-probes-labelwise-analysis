@@ -6,7 +6,6 @@
 # Exits non-zero only on a genuine mismatch. Values that differ by one unit in
 # the last printed digit because the paper rounded a 4-decimal printout again to
 # 3 are reported separately and do not fail the run.
-#SBATCH --account=p33044
 #SBATCH --partition=short
 #SBATCH --job-name=verify
 #SBATCH --time=00:20:00

@@ -2,7 +2,7 @@
 """
 For each (checkpoint, relation) pair, fit the linear model
 
-    UAS_n  ~  a  +  b · ln(n + 1)
+    UAS_δ  ~  a  +  b · ln(δ)
 
 using the raw observed data points (n, UAS_n) with |S_n| >= 5 (the same
 filter applied when building the NPZ).  Reports R², slope b, intercept a,
@@ -87,7 +87,7 @@ def main():
                 ))
                 continue
 
-            x = np.log(ns + 1)
+            x = np.log(ns)
             result = stats.linregress(x, uas)
 
             fitted = result.slope * x + result.intercept
@@ -128,7 +128,7 @@ def main():
 <html>
 <head>
 <meta charset="utf-8">
-<title>UAS ~ a + b·ln(n+1)  regression results</title>
+<title>UAS ~ a + b·ln(δ)  regression results</title>
 <style>
   body {{ font-family: sans-serif; font-size: 13px; padding: 16px; }}
   h2   {{ margin-bottom: 6px; }}
@@ -142,7 +142,7 @@ def main():
 </style>
 </head>
 <body>
-<h2>Linear regression: mean labeled UAS ~ <i>a</i> + <i>b</i>·ln(<i>n</i>+1)</h2>
+<h2>Linear regression: mean UASL ~ <i>a</i> + <i>b</i>·ln(<i>&delta;</i>)</h2>
 <p>Each row is one (checkpoint, relation) pair. Only pairs with at least
 {args.min_points} observed distances (|S_n| ≥ 5) are fitted;
 others show —.</p>
@@ -203,9 +203,9 @@ document.querySelectorAll('.tbl th').forEach((th, ci) => {{
     ax.set_xticklabels([str(c) for c in r2_wide.columns], fontsize=9)
     ax.set_yticks(range(len(r2_wide)))
     ax.set_yticklabels(r2_wide.index.tolist(), fontsize=7)
-    ax.set_xlabel('Checkpoint', fontsize=10)
+    ax.set_xlabel('Residual stream checkpoint', fontsize=10)
     ax.set_ylabel('Relation', fontsize=10)
-    ax.set_title(r'$R^2$: mean labeled UAS ~ $a + b\,\ln(n+1)$', fontsize=10)
+    ax.set_title(r'$R^2$: mean UASL ~ $a + b\,\ln \delta$', fontsize=10)
 
     # Annotate cells with R² value
     for ri in range(len(r2_wide)):

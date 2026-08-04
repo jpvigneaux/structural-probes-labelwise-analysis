@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""How much of the between-relation variance in ULAS is real, not sampling noise?
+"""How much of the between-relation variance in UASL is real, not sampling noise?
 
-A relation's ULAS is a proportion estimated from a finite number of dev-set
-edges, so part of the spread of ULAS across relations is binomial sampling
+A relation's UASL is a proportion estimated from a finite number of dev-set
+edges, so part of the spread of UASL across relations is binomial sampling
 noise rather than genuine between-relation difference. No regression can explain
 that part, so it sets a ceiling on the attainable R^2:
 
@@ -10,8 +10,8 @@ that part, so it sets a ceiling on the attainable R^2:
     reliability  =  Var_true / Var_obs   <=  max attainable R^2
 
 with all moments taken under the same weights the regression uses. This matters
-when comparing a model whose ULAS is high and well spread (BERT-base) with one
-whose ULAS sits near a floor (a model pre-trained on permuted sentences): a low
+when comparing a model whose UASL is high and well spread (BERT-base) with one
+whose UASL sits near a floor (a model pre-trained on permuted sentences): a low
 R^2 for the second could in principle mean 'nothing left to explain' rather than
 'these predictors do not apply'.
 

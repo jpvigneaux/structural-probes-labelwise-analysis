@@ -30,8 +30,8 @@ sbatch experiments/drivers/09_verify.sh
 | `02_convention.sh` | apply each checkpoint's consuming LayerNorm (convention B only) | CPU |
 | `03_align.sh` | subword→PTB alignment matrices | CPU |
 | `04_train.sh` | one structural probe per checkpoint (array) | GPU |
-| `05_ulas.sh` | per-relation ULAS, dev and test (array) | CPU |
-| `06_predictors.sh` | arc-length moments and head entropy on PTB train | CPU |
+| `05_ulas.sh` | per-relation UASL, dev and test (array) | CPU |
+| `06_predictors.sh` | linear distance moments and head entropy on PTB train | CPU |
 | `07_tables.sh` | every regression the paper reports | CPU |
 | `08_figures.sh` | curves, R² heat map, dendrogram | CPU |
 | `09_verify.sh` | diff all of it against the published values | CPU |

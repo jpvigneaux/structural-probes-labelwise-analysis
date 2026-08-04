@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compute per-relation UUAS (ULAS) on dev and test for trained probe checkpoints.
+"""Compute per-relation UUAS (UASL) on dev and test for trained probe checkpoints.
 
 Generalised from an earlier BERT-only version:
 that version hard-coded BERT-base's results directory and config filename, so it

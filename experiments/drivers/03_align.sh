@@ -6,7 +6,6 @@
 # Independent of 01/02 -- alignments depend only on the tokenizer, so models
 # sharing one (GPT-2 and GPT-J do not; RoBERTa-Shuffle-n1 uses roberta-base's)
 # can share an alignment directory. CPU only.
-#SBATCH --account=p33044
 #SBATCH --partition=short
 #SBATCH --job-name=align
 #SBATCH --time=02:00:00

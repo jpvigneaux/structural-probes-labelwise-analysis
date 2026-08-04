@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Scatter of head similarity-corrected entropy against ULAS, per relation.
+"""Scatter of head similarity-corrected entropy against UASL, per relation.
 
 Reproduces the main-text entropy figure for any model, so the appendix can show
-how model-specific the entropy/ULAS relationship is. Point area is proportional
-to how many dev-set edges the relation's ULAS was measured from -- the same
+how model-specific the entropy/UASL relationship is. Point area is proportional
+to how many dev-set edges the relation's UASL was measured from -- the same
 quantity that weights the WLS regression -- so visually dominant points are also
 the statistically reliable ones.
 
-The fitted line is the weighted least-squares fit of ULAS on head sim-entropy
+The fitted line is the weighted least-squares fit of UASL on head sim-entropy
 alone (the bivariate marginal), not the full two-predictor model; it is drawn to
 show direction and spread, not to restate the regression.
 
@@ -80,7 +80,7 @@ def main():
                     fontsize=7.5, color='#52514e')
 
     ax.set_xlabel('head similarity-corrected entropy (bits)', fontsize=11)
-    ax.set_ylabel('ULAS', fontsize=11)
+    ax.set_ylabel('UASL', fontsize=11)
     if args.model_label:
         ax.set_title(args.model_label, fontsize=11.5, color='#0b0b0b')
     ax.set_ylim(-0.02, 1.02)

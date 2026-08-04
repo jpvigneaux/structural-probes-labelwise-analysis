@@ -260,7 +260,7 @@ def main():
 
                         edge     = tuple(sorted((tok_idx, head_idx)))
                         relation = edge_to_rel.get(edge, 'UNK')
-                        dist_n   = abs(tok_idx - head_idx) - 1
+                        dist_n   = abs(tok_idx - head_idx)
 
                         rel_dist_total[relation][dist_n]   += 1
                         if edge in pred_edges:
@@ -371,7 +371,7 @@ def main():
             y=0.97, yanchor='top',
         ),
         xaxis=dict(
-            title='n (words between the two endpoints)',
+            title='δ (linear distance, in words)',
             dtick=1,
         ),
         yaxis=dict(

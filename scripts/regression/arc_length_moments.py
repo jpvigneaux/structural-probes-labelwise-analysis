@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Moments of the arc-length distribution, per dependency relation.
+"""Moments of the linear distance distribution, per dependency relation.
 
-Arc length is the linear distance between a head and its dependent, in tokens,
+Linear distance is the linear distance between a head and its dependent, in tokens,
 following Gildea & Jaeger (2015). For each relation this reports the count, and
 both the raw and the log-scale moments:
 
@@ -107,21 +107,21 @@ def mean(xs):
     return sum(xs) / len(xs)
 
 def stdev_log(xs):
-    """SD of log arc length.
+    """SD of log linear distance.
 
     Complements `mean_log_length`: it measures how spread out a relation is on
-    the scale on which ULAS actually decays (the log-linear decay model of the
-    arc-length analysis), whereas `stdev_length` measures spread of the raw
+    the scale on which UASL actually decays (the log-linear decay model of the
+    linear distance analysis), whereas `stdev_length` measures spread of the raw
     lengths and is dominated by the long right tail.
     """
     return stdev([math.log(x) for x in xs])
 
 def skew_log(xs):
-    """Adjusted Fisher-Pearson skewness of log arc length.
+    """Adjusted Fisher-Pearson skewness of log linear distance.
 
     Third standardised moment, continuing the sequence mean / sd / skew. The
-    reason to look past the mean is exact rather than asymptotic: if ULAS were
-    an exactly linear function f of log length, a relation's mean ULAS would be
+    reason to look past the mean is exact rather than asymptotic: if UASL were
+    an exactly linear function f of log length, a relation's mean UASL would be
     f(mean log length) identically and no other feature of its length
     distribution could carry information. Since the log-linear decay model
     holds only approximately, later moments are worth testing.

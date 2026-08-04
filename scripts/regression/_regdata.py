@@ -17,8 +17,8 @@ relation scheme; if they do not, the join comes up empty rather than silently
 pairing unrelated relations, which is the failure mode that mapping between
 PTB and UD schemes invites.
 
-`total` is the number of dev-set edges a relation's ULAS was estimated from, and
-is the regression weight throughout: ULAS is a proportion, so its sampling
+`total` is the number of dev-set edges a relation's UASL was estimated from, and
+is the regression weight throughout: UASL is a proportion, so its sampling
 variance scales as 1/total, and relations attested a handful of times must not
 carry the same weight as `prep` (n = 3783).
 

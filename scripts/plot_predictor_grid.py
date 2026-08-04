@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Grid of ULAS against each regression predictor, one row per model.
+"""Grid of UASL against each regression predictor, one row per model.
 
 Rows are models, columns are the three predictors of the WLS regression:
-mean(log arc length), sd(log arc length) and head similarity-corrected entropy.
+mean(log linear distance), sd(log linear distance) and head similarity-corrected entropy.
 
 The predictors are computed once on the Penn Treebank, so they are identical
 for every model: each column therefore shares an x-axis exactly, and the rows
-differ only in the ULAS values on the y-axis. That makes the grid a direct
+differ only in the UASL values on the y-axis. That makes the grid a direct
 visual comparison -- the same 42 points move vertically from row to row.
 
-Point area is proportional to the number of dev-set edges the relation's ULAS
+Point area is proportional to the number of dev-set edges the relation's UASL
 was measured from, i.e. to its weight in the regression, so the visually
 dominant points are the statistically reliable ones. The line in each panel is
 the weighted least-squares fit of the marginal relationship; the full model
@@ -51,8 +51,8 @@ FIT = '#eb6834'
 
 # (column key, axis label)
 PREDICTORS = [
-    ('mean_log_length', r'mean $\log$ arc length'),
-    ('sd_log_length', r'sd $\log$ arc length'),
+    ('mean_log_length', r'mean $\log$ linear distance'),
+    ('sd_log_length', r'sd $\log$ linear distance'),
     ('head_sim_entropy', 'head sim-entropy (bits)'),
 ]
 
@@ -81,7 +81,7 @@ def wls_resid(y, X, w, y_apply=None):
     With `y_apply`, the fit is still estimated from `y` but the residual is
     taken of `y_apply`. That is how the held-out panels are built: the
     adjustment for the other predictors is estimated on the dev split, where
-    the regression is fitted, and then applied to the test-split ULAS.
+    the regression is fitted, and then applied to the test-split UASL.
     """
     A = np.column_stack([np.ones(len(y)), X])
     beta = wls_beta(y, X, w)
@@ -91,7 +91,7 @@ def wls_resid(y, X, w, y_apply=None):
 def partial_axes(df, key, keys, w, response='uuas'):
     """Added-variable (partial regression) coordinates for predictor `key`.
 
-    Residualise both ULAS and `key` on the *other* predictors. The weighted
+    Residualise both UASL and `key` on the *other* predictors. The weighted
     slope through the resulting cloud equals this predictor's coefficient in
     the full multiple regression, so the panel agrees with the reported table.
     That equality is the Frisch-Waugh-Lovell theorem (Frisch and Waugh 1933;
@@ -100,10 +100,10 @@ def partial_axes(df, key, keys, w, response='uuas'):
     "How to read the predictor figures".
 
     This matters here: sd(log n) correlates +0.56 with mean(log n), which is
-    itself strongly negative for ULAS, so a raw scatter of ULAS against
+    itself strongly negative for UASL, so a raw scatter of UASL against
     sd(log n) slopes downward even though the partial effect is positive.
 
-    With `response='test_uuas'` the vertical coordinate is the held-out ULAS,
+    With `response='test_uuas'` the vertical coordinate is the held-out UASL,
     adjusted by the dev-estimated contribution of the other predictors and
     plotted against an x-axis that is unchanged, since the predictors are
     corpus properties and do not depend on the split. Nothing about the model
@@ -152,7 +152,7 @@ def area_column(args):
     """Which edge count sets a point's area: always the regression weight.
 
     A point's area says how much that relation counted towards the line, so it
-    is the dev-set edge count even when the plotted ULAS is held out. The
+    is the dev-set edge count even when the plotted UASL is held out. The
     weights are a fixed property of the fit and do not change when the response
     does; using test counts instead would resize the points for a reason
     unrelated to the fit the figure is about.
@@ -163,7 +163,7 @@ def area_column(args):
 def refit_column(args):
     """Weights for the comparison refit on the plotted points.
 
-    Distinct from the areas: this one is a regression on the test-split ULAS,
+    Distinct from the areas: this one is a regression on the test-split UASL,
     so its natural weights are the test edge counts those values were measured
     from. It is reported, never drawn.
     """
@@ -171,7 +171,7 @@ def refit_column(args):
 
 
 def ylabel_for(args):
-    stem = 'test ULAS' if args.ulas == 'test' else 'ULAS'
+    stem = 'test UASL' if args.ulas == 'test' else 'UASL'
     return stem if args.marginal else f'{stem}, residual'
 
 
@@ -249,7 +249,7 @@ def draw_panel(label, df, key, xlabel, args):
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(args.out, dpi=300, bbox_inches='tight', facecolor=SURFACE)
     kind = 'marginal' if args.marginal else 'partial'
-    print(f'Saved {args.out}  ({label}, {key}, {kind}, {args.ulas} ULAS, n = {len(df)})')
+    print(f'Saved {args.out}  ({label}, {key}, {kind}, {args.ulas} UASL, n = {len(df)})')
     print(f'  dev-fitted slope = {slope:+.4f}   weighted r = {corr:+.4f}')
     if args.ulas == 'test':
         print(f'  slope through the plotted test points = {got:+.4f} '
@@ -266,7 +266,7 @@ def main():
     ap.add_argument('--width', type=float, default=6.9)
     ap.add_argument('--row-height', type=float, default=1.72)
     ap.add_argument('--ulas', choices=('dev', 'test'), default='dev',
-                    help="which split's ULAS goes on the vertical axis. With "
+                    help="which split's UASL goes on the vertical axis. With "
                          "'test' the regression is still fitted on dev -- the "
                          "line, and the adjustment for the other predictors, "
                          "come from the dev fit and only the points are "
@@ -285,7 +285,7 @@ def main():
                     help='label the N heaviest relations in the standalone panel')
     ap.add_argument('--annotate-font', type=float, default=5.6)
     ap.add_argument('--marginal', action='store_true',
-                    help='plot raw ULAS against each predictor instead of the '
+                    help='plot raw UASL against each predictor instead of the '
                          'added-variable (partial) view. Note that the marginal '
                          'slope for sd(log n) has the opposite sign to its '
                          'regression coefficient, because it is confounded with '

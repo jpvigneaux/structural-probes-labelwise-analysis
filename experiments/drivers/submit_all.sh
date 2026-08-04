@@ -8,7 +8,7 @@
 # 13 gets 13; hardcoding a range here is how probes end up trained on
 # checkpoints that do not exist.
 #
-# The GPU stages (extract, train) are the expensive ones. Account p33044 is
+# The GPU stages (extract, train) are the expensive ones. The account is
 # capped at 8 concurrent GPU jobs, so the training array is throttled to 6 to
 # leave headroom for other work; a long pending queue is expected.
 #
@@ -59,7 +59,7 @@ echo "  04 train        $j_train  (array 0-$LAST%6, after $dep_embed and $j_alig
 
 j_ulas=$(sbatch --parsable --array=0-$LAST --dependency=afterok:$j_train \
          --job-name="ul-$RUN" "$DRV/05_ulas.sh")
-echo "  05 ULAS         $j_ulas  (array 0-$LAST, after $j_train)"
+echo "  05 UASL         $j_ulas  (array 0-$LAST, after $j_train)"
 
 j_tab=$(sbatch --parsable --dependency=afterok:$j_ulas \
         --job-name="tb-$RUN" "$DRV/07_tables.sh")

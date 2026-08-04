@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Compare two ways of summarising a relation's arc length in the WLS regression.
+"""Compare two ways of summarising a relation's linear distance in the WLS regression.
 
     mean_log_length  = mean_i log(n_i)      -- log of the GEOMETRIC mean
     log_mean_length  = log(mean_i n_i)      -- log of the ARITHMETIC mean
 
 By Jensen's inequality log(mean) >= mean(log), with the gap growing in the
 variance of the length distribution. The two therefore differ most for relations
-whose arc lengths are widely spread, so the question is empirical: which summary
-better predicts ULAS?
+whose linear distances are widely spread, so the question is empirical: which summary
+better predicts UASL?
 
 The two models are non-nested but have identical predictor counts and are fitted
 on identical data with identical weights, so R^2, AIC and the log-likelihood are

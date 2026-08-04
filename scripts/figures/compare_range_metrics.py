@@ -7,7 +7,7 @@ The composite distance of the clustering analysis is
 
 and the question this script addresses is whether replacing the published
 `d_range` -- the absolute difference of count-weighted 90th-percentile arc
-lengths -- by the Wasserstein-1 distance between the full arc-length
+lengths -- by the Wasserstein-1 distance between the full linear distance
 distributions produces more interpretable clusters at intermediate alpha.
 
 "Interpretable" is not directly measurable, so three proxies are reported, all
@@ -19,7 +19,7 @@ of which are properties of the clustering rather than of a reading of it:
   singletons    Relations left alone at the 25%-of-tallest-merge cut. A
                 partition that is mostly singletons plus one large residue
                 carries little structure to interpret.
-  ARI vs a=1    Adjusted Rand index of the partition against the pure-ULAS
+  ARI vs a=1    Adjusted Rand index of the partition against the pure-UASL
                 partition. Near 1 means the composite adds nothing to alpha=1;
                 near 0 means the intermediate solution is genuinely its own
                 grouping rather than a perturbation of one endpoint.
@@ -101,7 +101,7 @@ def main():
     ref = {}
     for name, sr in ranges.items():
         # alpha = 1 is the same tree for both metrics; compute it once per name
-        # so the ARI baseline is exactly the published pure-ULAS partition.
+        # so the ARI baseline is exactly the published pure-UASL partition.
         d = np.sqrt(su ** 2)
         np.fill_diagonal(d, 0.0)
         Z = linkage(squareform(d), method='average')

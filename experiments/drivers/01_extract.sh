@@ -6,7 +6,6 @@
 # Which extractor runs is read from the manifest, not chosen here: four of the
 # runs use the 2+2L extractor and two use the 1+L one, and the choice renumbers
 # every checkpoint downstream.
-#SBATCH --account=p33044
 #SBATCH --partition=gengpu
 #SBATCH --gres=gpu:1
 #SBATCH --job-name=extract

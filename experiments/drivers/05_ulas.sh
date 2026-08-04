@@ -1,12 +1,11 @@
 #!/bin/bash
-# Per-relation ULAS (dev and test) for every checkpoint of one run.
+# Per-relation UASL (dev and test) for every checkpoint of one run.
 #
 #   RUN=gpt2 RESULTS_ROOT=... sbatch --array=0-25 experiments/drivers/05_ulas.sh
 #
 # CPU only: this reads each probe's stored predictions, never the training
 # embeddings. Writes dev.uuas_by_relation and test.uuas_by_relation into each
 # layer-NN/, which is what every regression in the paper consumes.
-#SBATCH --account=p33044
 #SBATCH --partition=short
 #SBATCH --job-name=ulas
 #SBATCH --time=03:00:00

@@ -15,7 +15,7 @@ Both are supported here so the two can be reported side by side. They answer
 different questions and neither strictly dominates:
 
   --vec        similarity is INDEPENDENT of the probed model. The predictor is
-               external, so "low diversity predicts high ULAS" is a genuinely
+               external, so "low diversity predicts high UASL" is a genuinely
                out-of-sample claim.
   --embeddings similarity comes from the same representation the probe reads.
                More direct, but the predictor and the outcome now share a
