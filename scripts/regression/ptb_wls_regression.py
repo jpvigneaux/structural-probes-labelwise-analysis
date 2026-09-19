@@ -62,6 +62,11 @@ def parse_args():
         help="Omit sd(log length), recovering the two-predictor model.",
     )
     parser.add_argument(
+        "--exclude", nargs="+", default=[], metavar="REL",
+        help="Relations to leave out of the fit (none by default; the paper's "
+             "English fits leave out nothing).",
+    )
+    parser.add_argument(
         "--label", type=str, default="",
         help="Model name, printed with the summary.",
     )
@@ -89,6 +94,7 @@ def main():
 
     # Direct join on shared relation labels -- no relabeling performed.
     common = uuas.index.intersection(sim.index).intersection(length.index)
+    common = common.difference(args.exclude, sort=False)
     if len(common) == 0:
         print(
             "Error: no relations in common across the three files. "
