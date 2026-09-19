@@ -252,3 +252,31 @@ runs:
       coef: {head_sim_entropy: 0.014, mean_log_length: -0.002, sd_log_length: -0.060}
       median_r2_loglinear: 0.102
       reliability: 0.896
+
+  # Chinese Treebank 9.0, newswire + magazine + weblogs (promised in the ARR 3881
+  # response). Not yet in the paper: no `published:` block, so
+  # verify_paper_numbers.py skips it. `language` selects the Chinese text builder
+  # and punctuation tag (structural-probes/language_profiles.py); `corpus_stem`
+  # names its CoNLL-X files. Same architecture, layout and LayerNorm convention
+  # as `bertbase`, so checkpoint indices mean the same thing in both languages.
+  bertbase_zh:
+    label: BERT-base-Chinese
+    language: chinese
+    corpus_stem: ctb9-nmw
+    results: '{lnconv}/results-bertbase-zh-convB'
+    r2_table: '{figs}/r2_table_bertbase_zh.csv'
+    curves: '{figs}/uuas_mean_curves_bertbase_zh.npz'
+    extraction:
+      hf_name: bert-base-chinese
+      family: post_ln
+      extractor: convert_raw_to_hf_all_checkpoints.py
+      layout: 2+2L               # 26 checkpoints for 12 blocks
+      n_checkpoints: 26
+      layernorm_convention: B
+      embeddings: BERTBaseChinese-convB
+      stem: bertbase-zh-natural-layers
+      hidden_dim: 768
+      alignments: BERTBaseChinese
+      tokenizer: bert-base-chinese
+      n_special: [1, 1]
+    post_block_checkpoints: [3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25]

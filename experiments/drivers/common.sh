@@ -26,10 +26,14 @@ EMB_NAME=$(M "$RUN" extraction.embeddings)
 ALIGN_NAME=$(M "$RUN" extraction.alignments)
 REVISION=$(M "$RUN" extraction.revision --default '')
 N_CHECKPOINTS=$(M "$RUN" extraction.n_checkpoints)
-OPT_CK=$(M "$RUN" optimal_checkpoint)
+# A run the paper does not report yet has no optimal checkpoint until its probes are trained.
+OPT_CK=$(M "$RUN" optimal_checkpoint --default '')
 POST_BLOCK=$(M "$RUN" post_block_checkpoints)
 
 CORPUS=$(M --root corpus)
+# English runs name neither field and keep the Penn Treebank files and text builder.
+CORPUS_STEM=$(M "$RUN" corpus_stem --default ptb3-wsj)
+LANGUAGE=$(M "$RUN" language --default english)
 EMB_ROOT=$(M --root embeddings)
 ALIGN_ROOT=$(M --root alignments)
 OUT=$(M --root out)

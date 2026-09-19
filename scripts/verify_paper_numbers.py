@@ -267,6 +267,8 @@ def main():
     for key, run in man['runs'].items():
         if args.only and key not in args.only:
             continue
+        if 'published' not in run:      # a run the paper does not report yet
+            continue
         verify_run(key, run, roots, predictors, rep, args.verbose)
 
     n_bad = rep.print()

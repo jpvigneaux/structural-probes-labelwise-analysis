@@ -30,7 +30,7 @@ for SPLIT in train dev test; do
   OUT="$ALIGN_DIR/alignments.$SPLIT.hdf5"
   [ -s "$OUT" ] && { echo "$SPLIT already aligned, skipping"; continue; }
   $PYTHON "$REPO/scripts/precompute_alignments_hf.py" \
-    "$CORPUS/ptb3-wsj-$SPLIT.conllx" "$OUT" --model-name "$TOKENIZER"
+    "$CORPUS/$CORPUS_STEM-$SPLIT.conllx" "$OUT" --model-name "$TOKENIZER" --language "$LANGUAGE"
 done
 
 # The special-token counts the script just recorded must be what the manifest

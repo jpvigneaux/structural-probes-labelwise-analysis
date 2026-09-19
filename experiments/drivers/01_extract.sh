@@ -45,8 +45,8 @@ for SPLIT in train dev test; do
       EXTRA=""
       [[ "$EXTRACTOR" == *allow-missing-midblock* ]] && EXTRA="--allow-missing-midblock"
       $PYTHON "$REPO/scripts/convert_raw_to_hf_all_checkpoints.py" \
-        "$CORPUS/ptb3-wsj-$SPLIT.conllx" "$OUT_H5" "$HF_NAME" \
-        --dtype "$STORE_DTYPE" --model-dtype "$STORE_DTYPE" \
+        "$CORPUS/$CORPUS_STEM-$SPLIT.conllx" "$OUT_H5" "$HF_NAME" \
+        --dtype "$STORE_DTYPE" --model-dtype "$STORE_DTYPE" --language "$LANGUAGE" \
         ${REVISION:+--revision "$REVISION"} $EXTRA
       ;;
     convert_raw_to_bert_natural_sentences.py)

@@ -56,6 +56,6 @@ for SPLIT in train dev test; do
   # true inputs against the transform, so a wrong LayerNorm map fails here
   # rather than as a slightly worse probe fifty GPU-hours later.
   $PYTHON "$REPO/scripts/apply_consuming_layernorm.py" "$IN" "$OUT" "$HF_NAME" \
-    --conllx "$CORPUS/ptb3-wsj-dev.conllx" --validate-sentences 25
+    --conllx "$CORPUS/$CORPUS_STEM-dev.conllx" --validate-sentences 25 --language "$LANGUAGE"
 done
 echo "=== convention B written to $EMB_DIR ==="

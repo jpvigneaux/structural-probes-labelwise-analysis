@@ -32,6 +32,8 @@ MODELS = [
     "google-bert/bert-base-cased",  # canonical id transformer_lens resolves to
     "roberta-base",                 # RobertaTokenizer/Config in convert_raw_to_roberta_shufflen1.py
     "FacebookAI/roberta-base",      # canonical id
+    "bert-base-chinese",            # Chinese Treebank run (convert_raw_to_hf_all_checkpoints.py)
+    "google-bert/bert-base-chinese",  # canonical id
 ]
 
 
