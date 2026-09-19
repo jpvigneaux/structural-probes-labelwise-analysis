@@ -8,6 +8,8 @@ from scipy.stats import spearmanr, pearsonr
 import numpy as np 
 import json
 
+from language_profiles import punct_pos, language_of
+
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
@@ -69,6 +71,7 @@ class WordPairReporter(Reporter):
 
   def __init__(self, args):
     self.args = args
+    self.punct = punct_pos(language_of(args))
     self.reporting_methods = args['reporting']['reporting_methods']
     self.reporting_method_dict = {
         'spearmanr': self.report_spearmanr,
@@ -196,8 +199,8 @@ class WordPairReporter(Reporter):
         prediction = prediction[:length, :length]
         label = label[:length, :length].cpu()
 
-        gold_edges = prims_matrix_to_edges(label, words, poses)
-        pred_edges = prims_matrix_to_edges(prediction, words, poses)
+        gold_edges = prims_matrix_to_edges(label, words, poses, self.punct)
+        pred_edges = prims_matrix_to_edges(prediction, words, poses, self.punct)
         pred_edges_set = set([tuple(sorted(x)) for x in pred_edges])
 
         uspan_correct += len(
@@ -273,8 +276,8 @@ class WordPairReporter(Reporter):
         prediction = prediction[:length,:length]
         label = label[:length,:length].cpu()
 
-        gold_edges = prims_matrix_to_edges(label, words, poses)
-        pred_edges = prims_matrix_to_edges(prediction, words, poses)
+        gold_edges = prims_matrix_to_edges(label, words, poses, self.punct)
+        pred_edges = prims_matrix_to_edges(prediction, words, poses, self.punct)
 
         if split_name != 'test' and total_sents < 20:
           self.print_tikz(pred_edges, gold_edges, words, split_name)
@@ -314,8 +317,8 @@ class WordPairReporter(Reporter):
         prediction = prediction[:length, :length]
         label = label[:length, :length].cpu()
 
-        gold_edges = prims_matrix_to_edges(label, words, poses)
-        pred_edges = prims_matrix_to_edges(prediction, words, poses)
+        gold_edges = prims_matrix_to_edges(label, words, poses, self.punct)
+        pred_edges = prims_matrix_to_edges(prediction, words, poses, self.punct)
         pred_edges_set = set([tuple(sorted(x)) for x in pred_edges])
 
         # Map each undirected tree edge to its relation label using
@@ -364,6 +367,7 @@ class WordReporter(Reporter):
 
   def __init__(self, args):
     self.args = args
+    self.punct = punct_pos(language_of(args))
     self.reporting_methods = args['reporting']['reporting_methods']
     self.reporting_method_dict = {
         'spearmanr': self.report_spearmanr,
@@ -441,7 +445,7 @@ class WordReporter(Reporter):
         words = observation.sentence
         poses = observation.xpos_sentence
 
-        correct_root_predictions += label.index(0) == get_nopunct_argmin(prediction, words, poses)
+        correct_root_predictions += label.index(0) == get_nopunct_argmin(prediction, words, poses, self.punct)
         total_sents += 1
 
     root_acc = correct_root_predictions / float(total_sents)
@@ -511,20 +515,22 @@ class UnionFind:
     return i_parent
 
 
-def prims_matrix_to_edges(matrix, words, poses):
+def prims_matrix_to_edges(matrix, words, poses, punct=punct_pos('english')):
   '''
   Constructs a minimum spanning tree from the pairwise weights in matrix;
   returns the edges.
 
-  Never lets punctuation-tagged words be part of the tree.
+  Never lets punctuation-tagged words be part of the tree. `punct` is the set
+  of punctuation tags (language_profiles.PUNCT_POS); the default is the Penn
+  Treebank set this function has always used.
   '''
   pairs_to_distances = {}
   uf = UnionFind(len(matrix))
   for i_index, line in enumerate(matrix):
     for j_index, dist in enumerate(line):
-      if poses[i_index] in ["''", ",", ".", ":", "``", "-LRB-", "-RRB-"]:
+      if poses[i_index] in punct:
         continue
-      if poses[j_index] in ["''", ",", ".", ":", "``", "-LRB-", "-RRB-"]:
+      if poses[j_index] in punct:
         continue
       pairs_to_distances[(i_index, j_index)] = dist
   edges = []
@@ -534,11 +540,11 @@ def prims_matrix_to_edges(matrix, words, poses):
       edges.append((i_index, j_index))
   return edges
 
-def get_nopunct_argmin(prediction, words, poses):
+def get_nopunct_argmin(prediction, words, poses, punct=punct_pos('english')):
   '''
   Gets the argmin of predictions, but filters out all punctuation-POS-tagged words
   '''
-  puncts = ["''", ",", ".", ":", "``", "-LRB-", "-RRB-"]
+  puncts = punct
   original_argmin = np.argmin(prediction)
   for i in range(len(words)):
     argmin = np.argmin(prediction)

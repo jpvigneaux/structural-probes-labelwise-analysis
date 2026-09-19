@@ -36,6 +36,7 @@ import data as spdata
 import probe as sprobe
 import task as sptask
 from reporter import prims_matrix_to_edges
+from language_profiles import punct_pos, language_of
 
 
 class _DevTestOnlyDataset(spdata.BERTDataset):
@@ -70,7 +71,8 @@ def _predict(probe, dataloader):
     return batches
 
 
-def _write_uuas_by_relation(prediction_batches, dataloader, out_path):
+def _write_uuas_by_relation(prediction_batches, dataloader, out_path,
+                            punct=punct_pos('english')):
     relation_correct = defaultdict(int)
     relation_total = defaultdict(int)
 
@@ -84,8 +86,8 @@ def _write_uuas_by_relation(prediction_batches, dataloader, out_path):
             pred = pred[:length, :length]
             label = label[:length, :length].cpu()
 
-            gold_edges = prims_matrix_to_edges(label, words, poses)
-            pred_edges = prims_matrix_to_edges(pred, words, poses)
+            gold_edges = prims_matrix_to_edges(label, words, poses, punct)
+            pred_edges = prims_matrix_to_edges(pred, words, poses, punct)
             pred_edges_set = {tuple(sorted(e)) for e in pred_edges}
 
             edge_to_relation = {}
@@ -148,7 +150,7 @@ def process_layer(layer_idx, results_dir, force=False):
         get = (dataset.get_dev_dataloader if split_name == 'dev'
                else dataset.get_test_dataloader)
         preds = _predict(expt_probe, get())
-        _write_uuas_by_relation(preds, get(), out_path)
+        _write_uuas_by_relation(preds, get(), out_path, punct_pos(language_of(cfg)))
 
 
 def parse_layers(spec, results_dir):
