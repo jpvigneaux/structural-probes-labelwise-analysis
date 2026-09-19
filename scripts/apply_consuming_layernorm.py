@@ -48,6 +48,7 @@ import torch
 from transformers import AutoTokenizer, AutoModel
 
 from data import natural_sentence
+from language_profiles import LANGUAGES, join_cjk
 
 # model_type -> (attribute path to the block list, has_midblock).
 # Only pre-LayerNorm models need this transform; post-LN models are rejected
@@ -178,7 +179,8 @@ def consumer_norms(model, mtype, n_layers):
     return norms
 
 
-def validate(model, tokenizer, mtype, n_layers, norms, sentences, device, tol=2e-5):
+def validate(model, tokenizer, mtype, n_layers, norms, sentences, device, tol=2e-5,
+             text=natural_sentence):
     '''Check the transform against what the sub-layers actually receive.
 
     Rather than trusting a reading of the block's forward(), this pre-hooks the
@@ -234,7 +236,7 @@ def validate(model, tokenizer, mtype, n_layers, norms, sentences, device, tol=2e
     try:
         for tokens in sentences:
             mid.clear(); post.clear(); blk_in.clear(); true_b.clear()
-            enc = tokenizer(natural_sentence(tokens), return_tensors='pt').to(device)
+            enc = tokenizer(text(tokens), return_tensors='pt').to(device)
             with torch.no_grad():
                 model(**enc)
             a, tb = {}, {i: v[0] for i, v in true_b.items()}
@@ -337,6 +339,10 @@ def main():
     argp.add_argument('--norms', default=None,
                       help='transform using parameters from --dump-norms, without '
                            'loading the model (skips validation)')
+    argp.add_argument('--language', default='english', choices=LANGUAGES,
+                      help="how gold tokens become the model's text: 'english' "
+                           "(data.natural_sentence, the default) or 'chinese' "
+                           "(language_profiles.join_cjk)")
     args = argp.parse_args()
 
     if args.norms:
@@ -373,7 +379,8 @@ def main():
             # Validate in the model's own dtype: the check applies the very same
             # LayerNorm module to the very same captured tensor, so it is exact
             # even in fp16 -- and avoids materialising a 6B model in fp32.
-            validate(model, tokenizer, mtype, n_layers, norms, sents, 'cpu')
+            validate(model, tokenizer, mtype, n_layers, norms, sents, 'cpu',
+                     text=join_cjk if args.language == 'chinese' else natural_sentence)
         else:
             print('WARNING: no --conllx given, skipping validation')
 

@@ -37,7 +37,8 @@ import numpy as np
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
-from data import natural_sentence, hface_alignment_natural
+from data import natural_sentence, hface_alignment_natural, hface_alignment_spans
+from language_profiles import LANGUAGES, join_cjk_spans
 
 
 def read_conllx_sentences(path):
@@ -64,6 +65,10 @@ def main():
     argp.add_argument('--model-name', required=True,
                       help="HuggingFace id whose tokenizer produced the embeddings, "
                            "e.g. bert-base-cased, roberta-base, microsoft/deberta-v3-base")
+    argp.add_argument('--language', default='english', choices=LANGUAGES,
+                      help="how gold tokens become the model's text: 'english' "
+                           "(data.natural_sentence, the default) or 'chinese' "
+                           "(language_profiles.join_cjk)")
     args = argp.parse_args()
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
@@ -77,7 +82,10 @@ def main():
 
     with h5py.File(args.output_hdf5, 'w') as fout:
         for idx, tokens in enumerate(tqdm(sentences, desc='[computing alignments]')):
-            natural = natural_sentence(tokens)
+            if args.language == 'chinese':
+                natural, spans = join_cjk_spans(tokens)
+            else:
+                natural = natural_sentence(tokens)
             enc = tokenizer(natural, return_offsets_mapping=True,
                             return_special_tokens_mask=True)
             mask = enc['special_tokens_mask']
@@ -105,13 +113,18 @@ def main():
                     f'({first_pre},{first_suf}), sentence {idx} has ({n_pre},{n_suf}).')
 
             offsets = [o for o, m in zip(enc['offset_mapping'], mask) if m == 0]
-            align = hface_alignment_natural(natural, offsets, tokens)
+            if args.language == 'chinese':
+                align = hface_alignment_spans(offsets, spans, len(natural))
+            else:
+                align = hface_alignment_natural(natural, offsets, tokens)
             fout.create_dataset(str(idx), data=align.numpy().astype(np.float32))
 
         # Consumed by the pre-aligned branch of data.BERTDataset.
         fout.attrs['n_prefix_special'] = int(first_pre)
         fout.attrs['n_suffix_special'] = int(first_suf)
         fout.attrs['hf_model_name'] = args.model_name
+        if args.language != 'english':      # English files keep their attributes
+            fout.attrs['language'] = args.language
         print(f'special tokens per sentence: {first_pre} leading, {first_suf} trailing')
 
     print('Done.')

@@ -53,6 +53,7 @@ import torch
 from transformers import AutoTokenizer, AutoModel
 
 from data import natural_sentence
+from language_profiles import LANGUAGES, join_cjk
 
 # model_type -> (strategy, attribute path to the list of blocks)
 STRATEGY = {
@@ -110,6 +111,10 @@ def main():
                       help='dtype the checkpoints are stored in')
     argp.add_argument('--allow-missing-midblock', action='store_true',
                       help='required for architectures with no mid-block state (GPT-J)')
+    argp.add_argument('--language', default='english', choices=LANGUAGES,
+                      help="how gold tokens become the model's text: 'english' "
+                           "(data.natural_sentence, the default) or 'chinese' "
+                           "(language_profiles.join_cjk)")
     args = argp.parse_args()
 
     store_dtype = np.float16 if args.dtype == 'float16' else np.float32
@@ -176,7 +181,7 @@ def main():
     with h5py.File(args.output_path, 'w') as fout:
         for index, tokens in enumerate(sentences):
             mid.clear(); post.clear()
-            natural = natural_sentence(tokens)
+            natural = join_cjk(tokens) if args.language == 'chinese' else natural_sentence(tokens)
             enc = tokenizer(natural, return_tensors='pt').to(device)
             with torch.no_grad():
                 out = model(**enc)

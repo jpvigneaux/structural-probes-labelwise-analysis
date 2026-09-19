@@ -93,6 +93,8 @@ _EMAIL_RE = re.compile(r'^\S+@\S+\.\S+$')
 
 
 def is_natural_sentence_ud(tokens):
+  # English-only: the Latin-letter test below rejects every Chinese sentence.
+  # The Chinese Treebank run does not use this CoNLL-U path.
   """Return True if the CoNLL-U token list looks like a natural sentence.
 
   Filters out content that is structurally trivial or harmful for BERT:
@@ -227,6 +229,37 @@ def hface_alignment_natural(natural_str, offsets, untokenized_sent):
       sub_to_char[i, start:end] = 1.0 / (end - start)
 
   unnorm = sub_to_char @ lev2 @ ptb_tok_to_char.t()
+  return unnorm / unnorm.sum(dim=0, keepdim=True).clamp(min=1e-8)
+
+
+def hface_alignment_spans(offsets, spans, text_len):
+  '''(n_sub_no_specials, n_words) column-normalised alignment from exact word spans.
+
+  For text built by language_profiles.join_cjk_spans, which records the span of
+  every word in the string the model reads. The construction is that of
+  hface_alignment_natural (subword -> characters, row-normalised by subword
+  length; characters -> words, row-normalised by word length; columns then
+  normalised to sum to 1), with the character Levenshtein of its step 2
+  replaced by the known spans: nothing was rewritten, so nothing has to be
+  aligned. English does not use this function.
+
+  Args:
+    offsets:  (start_char, end_char) of each non-special subword, from a fast
+              tokenizer's offset_mapping.
+    spans:    (start_char, end_char) of each word in the same string.
+    text_len: length of that string.
+  Returns:
+    Tensor of shape (len(offsets), len(spans)). A word that no subword covers
+    gets an all-zero column, which check_embeddings.py reports.
+  '''
+  sub_to_char = torch.zeros(len(offsets), text_len)
+  for i, (start, end) in enumerate(offsets):
+    if end > start:
+      sub_to_char[i, start:end] = 1.0 / (end - start)
+  word_to_char = torch.zeros(len(spans), text_len)
+  for w, (start, end) in enumerate(spans):
+    word_to_char[w, start:end] = 1.0 / (end - start)
+  unnorm = sub_to_char @ word_to_char.t()
   return unnorm / unnorm.sum(dim=0, keepdim=True).clamp(min=1e-8)
 
 
