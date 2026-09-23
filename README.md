@@ -1,7 +1,7 @@
 # Representation of syntax in LLMs through the lens of linear distance and similarity-aware entropy
 
 Code and saved results for the paper *"Representation of syntax in LLMs through
-the lens of linear distance and similarity-aware entropy."* The paper
+the lens of linear distance and similarity-aware entropy."* [arXiv:2608.27813](https://arxiv.org/abs/2608.27813) The paper
 disaggregates the structural probe of
 [Hewitt & Manning (2019)](https://nlp.stanford.edu/pubs/hewitt2019structural.pdf)
 by dependency relation — computing an undirected attachment score by label
