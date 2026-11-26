@@ -110,7 +110,8 @@ reproduce **without** any external data.
 
 ### 1. Figures from bundled results (no GPU, no external data)
 
-The saved probe outputs (`results-convB/`, roberta `results/`) and the curve
+The saved probe outputs (`results-convB/`, roberta `results/`: per-relation
+scores and configurations, not the trained probes themselves) and the curve
 `.npz` are included, so the BERT-base figures regenerate directly. Everything
 downstream of the `.npz` needs neither the corpus nor a GPU:
 
@@ -273,7 +274,9 @@ Too large to bundle; needed only for full reproduction (level 2):
 - **PTB-WSJ** dependency parses (CoNLL-X). Requires an unmodified PTB3 licence.
   No PTB text is bundled here, in any form: the corpus is LDC-licensed and not
   ours to redistribute. `scripts/convert_conll_to_raw.py` regenerates the
-  de-PTBified sentences the extractors consume, from your own copy.
+  de-PTBified sentences the extractors consume, from your own copy. For the
+  same reason the trained probes (`predictor.params`) are not distributed: the
+  drivers retrain them from your copy of the corpus.
 - **Natural-sentence embeddings** for the six runs (HDF5; 13 to 46 checkpoints
   per sentence depending on the model, and 4096-dimensional for GPT-J).
 - **RoBERTa-Shuffle-N1** fairseq checkpoint (Sinha et al., EMNLP 2021), which

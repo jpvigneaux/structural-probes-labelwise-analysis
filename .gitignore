@@ -22,3 +22,6 @@ paths.sh
 # the .tikz dependency renderings on every probe run.
 experiments/*/data/sentences.txt
 *.tikz
+
+# Trained probes: not redistributed (trained on LDC-licensed treebanks)
+predictor.params
