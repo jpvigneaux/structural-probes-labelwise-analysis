@@ -127,23 +127,31 @@ python scripts/apply_consuming_layernorm.py IN.hdf5 OUT.hdf5 gpt2 \
 ```
 
 For post-LN encoders the two literature conventions coincide, so this is only
-needed to undo the extractor's choice of storing the pre-LayerNorm accumulator.
+needed to undo the extractor's choice of storing the pre-LayerNorm sums, which
+are neither A nor B.
 
-Which convention each run uses is not a free choice, and it is what makes the
-cross-model comparison in the paper like-for-like. In a post-LayerNorm block the
-residual stream is normalised in place, so the representation the architecture
-maintains *is* the post-LayerNorm value; in a pre-LayerNorm block nothing
-normalises the stream itself. Taking "the residual stream as the architecture
-maintains it" in both cases therefore means:
+The paper uses convention A throughout (its Appendix "Residual stream
+checkpoints" defines the checkpoints; Appendix "Another look at layer
+normalization" names the conventions), and that choice is what makes the
+cross-model comparison like-for-like. In a post-LayerNorm block the residual
+stream is normalised in place, so the representation the architecture maintains
+*is* the post-LayerNorm value; in a pre-LayerNorm block nothing normalises the
+stream itself. Taking "the residual stream as the architecture maintains it" in
+both cases therefore means:
 
-| run | convention | why |
-| --- | --- | --- |
-| BERT-base | B | post-LN; undoes the extractor's pre-LayerNorm accumulator |
-| DeBERTa-v3-base | B (already) | post-LN `hidden_states`; no transform needed |
-| RoBERTa-Shuffle-n1 | B (already) | post-LN `hidden_states`; no transform needed |
-| ModernBERT-base | A | pre-LN; the stream is never normalised in place |
-| GPT-2-base | A | pre-LN |
-| GPT-J-6B | A | pre-LN, parallel residual |
+| run | paper's convention | conversion step (`layernorm_convention` in the manifest) | why |
+| --- | --- | --- | --- |
+| BERT-base | A (= B, post-LN) | `B`: apply the consuming LayerNorm | post-LN; the extractor stored the pre-LayerNorm sums |
+| DeBERTa-v3-base | A (= B, post-LN) | none | post-LN `hidden_states` are already post-LayerNorm |
+| RoBERTa-Shuffle-n1 | A (= B, post-LN) | none | as DeBERTa |
+| ModernBERT-base | A | none | pre-LN; the stream is never normalised in place |
+| GPT-2-base | A | none | pre-LN |
+| GPT-J-6B | A | none | pre-LN, parallel residual |
+
+The manifest's `layernorm_convention: B` and the `-convB` directory names thus
+label the conversion applied to the stored files, not a departure from the
+paper's convention. The only convention-B probes in the paper are the GPT-2
+comparison of Appendix "Another look at layer normalization".
 
 `experiments/drivers/02_convention.sh` runs this stage for the runs that declare
 convention B and exits with nothing to do for the others.
@@ -465,7 +473,7 @@ from the 4th most peripheral relation to rank 19; likewise `predet`, `expl`),
 and its dendrograms have cophenetic correlation 0.895-0.899 at every alpha
 instead of dipping to 0.842 in the middle. It does *not* make the intermediate
 alpha clusters easier to interpret, which was the reason for trying it: the two
-metrics correlate at 0.91, both are nearly orthogonal to `d_ULAS` (0.12 and
+metrics correlate at 0.91, both are nearly orthogonal to `d_UASL` (0.12 and
 0.19), and the `w1` partitions at intermediate alpha are more fragmented. The
 `alpha = 1` panel, the only one the paper's analysis uses, does not involve the
 range component and is identical under both.

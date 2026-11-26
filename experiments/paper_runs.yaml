@@ -33,7 +33,9 @@ runs:
       extractor: convert_raw_to_bert_natural_sentences.py
       layout: 2+2L               # 26 checkpoints for 12 blocks
       n_checkpoints: 26
-      layernorm_convention: B    # apply_consuming_layernorm.py; see REPRODUCING.md S.1
+      layernorm_convention: B    # conversion step: apply_consuming_layernorm.py turns the stored
+                                 # pre-LayerNorm sums into the paper's post-LN checkpoints
+                                 # (its convention A, = B for post-LN); see REPRODUCING.md S.1
       embeddings: BERTBase-convB
       stem: bertbase-natural-layers
       hidden_dim: 768
@@ -272,7 +274,7 @@ runs:
       extractor: convert_raw_to_hf_all_checkpoints.py
       layout: 2+2L               # 26 checkpoints for 12 blocks
       n_checkpoints: 26
-      layernorm_convention: B
+      layernorm_convention: B    # conversion step, as for bertbase
       embeddings: BERTBaseChinese-convB
       stem: bertbase-zh-natural-layers
       hidden_dim: 768

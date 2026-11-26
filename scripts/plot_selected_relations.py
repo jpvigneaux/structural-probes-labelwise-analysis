@@ -49,6 +49,7 @@ RELATION_SETS = {
         ('Int. args.', [
             # blue shades
             ('dobj', 'dobj', '#08306B', '-', '^'),
+            ('pobj', 'pobj', '#1B7F9E', (0, (5, 1)), 'v'),
             ('xcomp', 'xcomp', '#2171B5', '--', 'P'),
             ('iobj', 'iobj', '#4292C6', '-.', 'D'),
             ('pcomp', 'pcomp', '#9ECAE1', ':', 'h'),

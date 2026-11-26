@@ -23,6 +23,10 @@ selected explicitly per model type and unknown types raise rather than guess:
       after folding LayerNorm (verified against the existing BERT-base extraction).
       Reading the LayerNorm *output* instead would give a differently scaled
       representation: same directions, but std ~0.8 rather than ~1.3-1.7.
+      These sums are NOT the paper's checkpoints, which for a post-LN model are
+      taken after each LayerNorm (Appendix "Residual stream checkpoints");
+      apply_consuming_layernorm.py (run by experiments/drivers/02_convention.sh)
+      converts them, and every post-LN result in the paper uses the converted files.
 
   pre_ln   (GPT-2, ModernBERT)
       Pre-LayerNorm blocks compute `h = h + attn(LN(h))`. Capture the block input

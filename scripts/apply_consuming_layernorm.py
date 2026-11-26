@@ -1,12 +1,19 @@
 '''Derive "convention B" checkpoints from "convention A" checkpoints.
 
 Two conventions appear in the literature for what "the representation at layer l"
-means. They coincide for post-LayerNorm encoders (BERT, RoBERTa, DeBERTa) and
-diverge for pre-LayerNorm models (GPT-2, ModernBERT, GPT-J):
+means; the paper calls them A and B (Appendix "Another look at layer
+normalization", label app:convention). They coincide for post-LayerNorm encoders
+(BERT, RoBERTa, DeBERTa) and diverge for pre-LayerNorm models (GPT-2, ModernBERT,
+GPT-J):
 
-  A  "what propagates"       the raw residual stream, unnormalized.
-                             Elhage et al. (2021), Ferrando et al. (2024) Eq. 5,
-                             TransformerLens `resid_mid`/`resid_post`.
+  A  "what propagates"       the residual stream as the architecture maintains it,
+                             i.e. the checkpoints defined in the paper's Appendix
+                             "Residual stream checkpoints" (app:checkpoints).
+                             For a pre-LN model this is the raw, unnormalized
+                             stream: Elhage et al. (2021), Ferrando et al. (2024)
+                             Eq. 5, TransformerLens `resid_mid`/`resid_post` on
+                             HookedTransformer. For a post-LN encoder it is the
+                             post-LayerNorm value.
 
   B  "what the next sub-layer reads"
                              the residual stream after the LayerNorm that its
@@ -15,7 +22,11 @@ diverge for pre-LayerNorm models (GPT-2, ModernBERT, GPT-J):
 
 In a post-LN block, `x_mid = LN1(attn + x)` is handed straight to the feed-forward
 and `x_out = LN2(ffn + x_mid)` straight to the next block's attention, so A == B
-exactly. In a pre-LN block nothing normalizes the stream itself, so A and B differ
+exactly. Our post-LN extractors nevertheless store a third quantity, the sum
+entering each LayerNorm (`attn + x`, `ffn + x_mid`; TransformerLens's
+`resid_mid`/`resid_post` on HookedEncoder are these sums), which is neither A nor
+B; this script normalizes it to the paper's representation. In a pre-LN block
+nothing normalizes the stream itself, so A and B differ
 by the consumer's LayerNorm -- and each checkpoint has exactly one consumer, which
 makes B unambiguous:
 
@@ -51,9 +62,10 @@ from data import natural_sentence
 from language_profiles import LANGUAGES, join_cjk
 
 # model_type -> (attribute path to the block list, has_midblock).
-# Only pre-LayerNorm models need this transform; post-LN models are rejected
-# because A and B already agree and silently producing a "B" file for them would
-# invite double-normalization.
+# These are the pre-LayerNorm models, for which A and B differ. Post-LN encoders
+# are listed separately in POST_LN_BLOCKS below: for them A and B agree, and the
+# transform only normalizes the stored pre-LayerNorm sums (applying it to files
+# that already hold post-LN values would normalize them twice).
 #
 #   gpt2  serial blocks, 2+2L layout, separate ln_1 (attn) and ln_2 (mlp)
 #   gptj  PARALLEL residual: h_out = h + attn(ln_1(h)) + mlp(ln_1(h)).
@@ -205,7 +217,7 @@ def validate(model, tokenizer, mtype, n_layers, norms, sentences, device, tol=2e
         handles.append(blk.register_forward_hook(
             lambda m, i, out, k=k: post.__setitem__(k, first_tensor(out).detach().clone())))
         if post_ln:
-            # A = the accumulator entering each LayerNorm; true B = what the next
+            # stored = the sum entering each LayerNorm; true B = what the next
             # sub-layer is handed: the feed-forward for the mid checkpoint, the
             # next block for the post checkpoint (that is just the block output).
             handles.append(register_input_hook(blk.attention.output.LayerNorm, mid, k))

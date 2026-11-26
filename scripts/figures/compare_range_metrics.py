@@ -3,7 +3,7 @@
 
 The composite distance of the clustering analysis is
 
-    d(r1,r2) = sqrt( alpha * d_ULAS_std^2 + (1-alpha) * d_range_std^2 ),
+    d(r1,r2) = sqrt( alpha * d_UASL_std^2 + (1-alpha) * d_range_std^2 ),
 
 and the question this script addresses is whether replacing the published
 `d_range` -- the absolute difference of count-weighted 90th-percentile arc
@@ -25,7 +25,7 @@ of which are properties of the clustering rather than of a reading of it:
                 grouping rather than a perturbation of one endpoint.
 
 Also reported: the correlation of the two range metrics with each other and of
-each with d_ULAS, since a range component nearly orthogonal to d_ULAS is what
+each with d_UASL, since a range component nearly orthogonal to d_UASL is what
 makes intermediate alpha hard to read in the first place.
 
 Usage:
@@ -92,8 +92,8 @@ def main():
     print(f'{n_rel} relations, {len(u_ulas)} pairs\n')
     print('component correlations (Spearman):')
     print(f'  p90  vs  w1     {spearmanr(u_p90, u_w1).statistic:+.3f}')
-    print(f'  p90  vs  d_ULAS {spearmanr(u_p90, u_ulas).statistic:+.3f}')
-    print(f'  w1   vs  d_ULAS {spearmanr(u_w1, u_ulas).statistic:+.3f}')
+    print(f'  p90  vs  d_UASL {spearmanr(u_p90, u_ulas).statistic:+.3f}')
+    print(f'  w1   vs  d_UASL {spearmanr(u_w1, u_ulas).statistic:+.3f}')
 
     su = standardise(d_ulas)
     ranges = {'p90': standardise(d_p90), 'w1': standardise(d_w1)}

@@ -4,7 +4,7 @@
 The R^2 heat map (regression_uas_vs_log_distance.py) says how well the
 log-linear decay model
 
-    ULAS_δ(r, k) = a + b ln(δ)
+    UASL_δ(r, k) = a + b ln(δ)
 
 fits each relation, but not what the failures look like. This draws the
 underlying data: for each relation, the observed UASL at every linear distance with
@@ -80,7 +80,8 @@ def main():
         if len(ns) < args.min_points:
             panels.append((rel, ns, uas, None))
             continue
-        panels.append((rel, ns, uas, stats.linregress(np.log(ns), uas)))
+        # NPZ stores n (words between); δ = n + 1
+        panels.append((rel, ns, uas, stats.linregress(np.log(ns + 1), uas)))
     panels.sort(key=lambda t: (t[3].rvalue ** 2) if t[3] else -1, reverse=True)
 
     ncols = min(args.ncols, len(panels))
@@ -94,7 +95,7 @@ def main():
     axes = np.atleast_1d(axes).ravel()
 
     for ax, (rel, ns, uas, fit) in zip(axes, panels):
-        x = np.log(ns)
+        x = np.log(ns + 1)          # NPZ stores n (words between); δ = n + 1
         ax.scatter(x, uas, s=args.marker_size, color='#08306B', zorder=3, alpha=0.85)
         if fit is not None:
             xs = np.linspace(x.min(), x.max(), 50)
