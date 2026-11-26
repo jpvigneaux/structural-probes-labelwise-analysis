@@ -10,9 +10,19 @@ there is a single source of truth between extraction and alignment.
 HDF5 index scheme (LAYER_COUNT_TOTAL = 26 for BERT-base):
   0          emb       raw word embeddings (no position, no LayerNorm)
   1          layer-00  embedding output (word + position + type + LayerNorm)
-  2k         layer-k+A post-attention intermediate of block k, k=1..12
-             = LayerNorm(layer_{k-1} + MultiHeadAttn(layer_{k-1}))
-  2k+1       layer-k   full output of transformer block k, k=1..12
+  2k         layer-k+A post-attention intermediate of block k, k=1..12,
+             stored BEFORE the block's attention LayerNorm:
+             layer_{k-1} + MultiHeadAttn(layer_{k-1})   (hook_resid_mid)
+  2k+1       layer-k   output of transformer block k, k=1..12, stored BEFORE
+             the block's output LayerNorm: layer-k+A' + FFN(layer-k+A'),
+             where layer-k+A' is the normalized post-attention state
+             (hook_resid_post)
+
+Except for index 1, these are not the checkpoints of the paper (Appendix
+"Residual stream checkpoints"), which are taken after each LayerNorm. Every
+BERT-base result in the paper uses this script's output after
+scripts/apply_consuming_layernorm.py (the -convB embeddings), which applies the
+missing LayerNorm; experiments/drivers/02_convention.sh runs that step.
 
 Explicit mapping for BERT-base:
   idx  name
@@ -131,9 +141,9 @@ with h5py.File(args.output_path, 'w') as fout:
         dset[1] = cache['blocks.0.hook_resid_pre'][0].cpu().numpy()
 
         for k in range(LAYER_COUNT):
-            # post-attention intermediate: LayerNorm(attn_out + residual)
+            # post-attention sum attn_out + residual, BEFORE its LayerNorm
             dset[2 + 2 * k]     = cache[f'blocks.{k}.hook_resid_mid'][0].cpu().numpy()
-            # full block output (attention + FFN)
+            # block output sum ffn_out + normalized residual, BEFORE its LayerNorm
             dset[2 + 2 * k + 1] = cache[f'blocks.{k}.hook_resid_post'][0].cpu().numpy()
 
         if (index + 1) % 500 == 0:

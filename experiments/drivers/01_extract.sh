@@ -28,10 +28,14 @@ source "$REPO/experiments/drivers/common.sh"
 
 EXTRACTOR=$(M "$RUN" extraction.extractor)
 STORE_DTYPE=$(M "$RUN" extraction.store_dtype --default float32)
-mkdir -p "$EMB_DIR"
+# A convention-B run's manifest names the -convB directory, which 02_convention.sh
+# writes; extraction itself always produces convention A beside it.
+EXT_DIR="$EMB_DIR"
+[[ "$CONVENTION" == "B" ]] && EXT_DIR="${EMB_DIR%-convB}"
+mkdir -p "$EXT_DIR"
 
 for SPLIT in train dev test; do
-  OUT_H5="$EMB_DIR/raw.$SPLIT.$STEM.hdf5"
+  OUT_H5="$EXT_DIR/raw.$SPLIT.$STEM.hdf5"
   if [ -s "$OUT_H5" ]; then echo "$SPLIT already extracted, skipping"; continue; fi
 
   case "$EXTRACTOR" in
@@ -41,9 +45,14 @@ for SPLIT in train dev test; do
       EXTRA=""
       [[ "$EXTRACTOR" == *allow-missing-midblock* ]] && EXTRA="--allow-missing-midblock"
       $PYTHON "$REPO/scripts/convert_raw_to_hf_all_checkpoints.py" \
-        "$CORPUS/ptb3-wsj-$SPLIT.conllx" "$OUT_H5" "$HF_NAME" \
-        --dtype "$STORE_DTYPE" --model-dtype "$STORE_DTYPE" \
+        "$CORPUS/$CORPUS_STEM-$SPLIT.conllx" "$OUT_H5" "$HF_NAME" \
+        --dtype "$STORE_DTYPE" --model-dtype "$STORE_DTYPE" --language "$LANGUAGE" \
         ${REVISION:+--revision "$REVISION"} $EXTRA
+      ;;
+    convert_raw_to_bert_natural_sentences.py)
+      # The extractor the BERT-base run was actually made with (transformer_lens).
+      $PYTHON "$REPO/scripts/convert_raw_to_bert_natural_sentences.py" \
+        "$CORPUS/ptb3-wsj-$SPLIT.conllx" "$OUT_H5" base
       ;;
     convert_raw_to_hf_natural_sentences.py)
       $PYTHON "$REPO/scripts/convert_raw_to_hf_natural_sentences.py" \
@@ -61,5 +70,9 @@ for SPLIT in train dev test; do
   esac
 done
 
-echo "=== checking the written files against the manifest ==="
-$PYTHON "$REPO/scripts/check_embeddings.py" --run "$RUN"
+if [[ "$CONVENTION" == "B" ]]; then
+  echo "convention-B run: check_embeddings runs after 02_convention.sh"
+else
+  echo "=== checking the written files against the manifest ==="
+  $PYTHON "$REPO/scripts/check_embeddings.py" --run "$RUN"
+fi

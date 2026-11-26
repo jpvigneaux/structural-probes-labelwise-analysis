@@ -1,7 +1,13 @@
-# Representation of syntax in LLMs through the lens of linear distance and similarity-aware entropy
 
-Code and saved results for the paper *"Representation of syntax in LLMs through
-the lens of linear distance and similarity-aware entropy."* [arXiv:2608.27813](https://arxiv.org/abs/2608.27813) The paper
+# Representation of Syntax in LLMs Through the Lens of Linear Distance and Similarity-Aware Entropy
+
+Code and saved results for the paper *"Representation of Syntax in LLMs Through
+the Lens of Linear Distance and Similarity-Aware Entropy"* by Juan Pablo
+Vigneaux, Mary Kennedy, Khalil Iskarous, Robert Frank and Matilde Marcolli.
+
+Preprint: [arXiv:2608.27813](https://arxiv.org/abs/2608.27813)
+
+The paper
 disaggregates the structural probe of
 [Hewitt & Manning (2019)](https://nlp.stanford.edu/pubs/hewitt2019structural.pdf)
 by dependency relation — computing an undirected attachment score by label
@@ -41,12 +47,9 @@ anything.
 |---|---|
 | `fig:dependencies1`, `fig:dependencies2` — UASL by relation | [`scripts/plot_selected_relations.py`](scripts/plot_selected_relations.py) |
 | `fig:dependencies-shuffled` — the same for RoBERTa-Shuffle-n1 | same, on the `shufflen1` run |
-| `fig:performance-as-a-function-of-distance` — mean UASL vs linear distance | [`scripts/figures/uuas_mean_curves_by_checkpoint.py`](scripts/figures/uuas_mean_curves_by_checkpoint.py) → [`uuas_mean_curves_png.py`](scripts/figures/uuas_mean_curves_png.py) |
 | `fig:R2-log-distance-model` — R² heat map, log-linear decay | [`scripts/figures/regression_uas_vs_log_distance.py`](scripts/figures/regression_uas_vs_log_distance.py) `--relations` |
-| `fig:ulas-vs-log-distance` — the data behind it, at checkpoint 16 | [`scripts/figures/ulas_vs_log_distance_curves.py`](scripts/figures/ulas_vs_log_distance_curves.py) |
 | `fig:UASL-only-dendrogram` — relation dendrogram, α = 1 | [`scripts/figures/cluster_relations_by_distance.py`](scripts/figures/cluster_relations_by_distance.py) `--alpha 1.0` |
 | `fig:head-sim-entropy` — held-out UASL vs head entropy, BERT-base | [`scripts/plot_predictor_grid.py`](scripts/plot_predictor_grid.py) `--panel head_sim_entropy --ulas test` |
-| `fig:decay-across-models` — mean UASL vs linear distance, five models at their optima | [`scripts/figures/curves_across_models.py`](scripts/figures/curves_across_models.py) |
 | `tab:regression_results` — the three-predictor WLS regression | [`scripts/regression/ptb_wls_regression.py`](scripts/regression/ptb_wls_regression.py) |
 | `tab:models` — the six runs and their architectures | [`experiments/paper_runs.yaml`](experiments/paper_runs.yaml) (transcribed by hand) |
 
@@ -55,23 +58,30 @@ anything.
 | Paper artifact | Script |
 |---|---|
 | `tab:edge-counts` — gold edges per relation and split | [`scripts/compute_uuas_by_relation.py`](scripts/compute_uuas_by_relation.py) |
+| `fig:performance-as-a-function-of-distance` — mean UASL vs linear distance | [`scripts/figures/uuas_mean_curves_by_checkpoint.py`](scripts/figures/uuas_mean_curves_by_checkpoint.py) → [`uuas_mean_curves_png.py`](scripts/figures/uuas_mean_curves_png.py) |
+| `fig:ulas-vs-log-distance` — the data behind it, at checkpoint 16 | [`scripts/figures/ulas_vs_log_distance_curves.py`](scripts/figures/ulas_vs_log_distance_curves.py) |
 | `fig:R2-all-relations` — the R² heat map over every relation | [`scripts/figures/regression_uas_vs_log_distance.py`](scripts/figures/regression_uas_vs_log_distance.py) |
 | `tab:arc-len-90` — 90th-percentile linear distance | [`scripts/figures/cluster_relations_by_distance.py`](scripts/figures/cluster_relations_by_distance.py) |
 | `fig:dendrogram_relations`, `fig:dendrogram_w1` — four-panel dendrograms over α | same, `--range-metric p90` / `w1` |
 | `tab:other-models` — the regression, repeated on five models | [`scripts/regression/ptb_wls_regression.py`](scripts/regression/ptb_wls_regression.py) per run |
 | `fig:app-selected`, `fig:app-curves`, `fig:app-r2a`, `fig:app-r2b`, `fig:app-dendro` | [`experiments/drivers/08_figures.sh`](experiments/drivers/08_figures.sh) per run |
-| `fig:predictor-grid` — predictors against held-out UASL | [`scripts/plot_predictor_grid.py`](scripts/plot_predictor_grid.py) `--ulas test` |
+| `fig:predictor-grid` — added-variable plots of dev UASL against each predictor | [`scripts/plot_predictor_grid.py`](scripts/plot_predictor_grid.py) (default `--ulas dev`) |
 | `tab:moment-ladder` — does dispersion or skew pay for itself? | [`scripts/regression/add_length_spread.py`](scripts/regression/add_length_spread.py) |
 | sd vs variance (Appendix "Encoding linear distance in the regression") | [`scripts/regression/compare_dispersion_scale.py`](scripts/regression/compare_dispersion_scale.py) |
 | mean(log δ) vs log(mean δ) (same appendix) | [`scripts/regression/compare_length_predictors.py`](scripts/regression/compare_length_predictors.py) |
 | `tab:shuffled-regression`, `fig:app-shuffled-curves`, `fig:app-shuffled-r2` | the same scripts, on the `shufflen1` run |
-| the contextual-embedding robustness check (§Entropy analysis) | [`scripts/regression/contextual_sim_entropy.py`](scripts/regression/contextual_sim_entropy.py) |
+| `tab:replicates`, `fig:replicates` — 20 seeds and 20 stratified re-splits at checkpoint 16 | probes: [`experiments/seeds-ck16/run_seed.sh`](experiments/seeds-ck16/run_seed.sh), [`experiments/ablation-splits-ck16/`](experiments/ablation-splits-ck16/) (splits from `generate_splits.py`); coefficients: [`rebuttal_robustness.py`](scripts/regression/rebuttal_robustness.py) `--replicates`; figure: [`scripts/figures/plot_replicate_uasl.py`](scripts/figures/plot_replicate_uasl.py) |
+| `tab:weighting` — other weightings and the quasi-binomial GLM | [`rebuttal_robustness.py`](scripts/regression/rebuttal_robustness.py), block `weights` |
+| `tab:dependent` — similarity-aware entropy of the dependent | same, block `dependent` |
+| `tab:controls` — frequency, Shannon entropy, number of heads, head POS entropy, share of verbal heads | same, block `confounds` |
+| `tab:spaces` — other embedding spaces, the contextual one included | same, block `alt-sim`; the contextual similarities from [`contextual_sim_entropy.py`](scripts/regression/contextual_sim_entropy.py) |
+| held-out R² and leave-one-relation-out Q² (§Entropy analysis, "Robustness") | [`scripts/regression/holdout_predictivity.py`](scripts/regression/holdout_predictivity.py) |
+| `tab:chinese`, `fig:uuas-zh` — the Chinese pilot | the `bertbase_zh` run ([REPRODUCING.md](REPRODUCING.md), Chinese Treebank section) and [`ptb_wls_regression.py`](scripts/regression/ptb_wls_regression.py); figure: [`scripts/figures/plot_uuas_by_checkpoint.py`](scripts/figures/plot_uuas_by_checkpoint.py) |
 
-Two analyses are kept here that the current paper no longer reports: the
-reliability ceiling ([`ulas_reliability.py`](scripts/regression/ulas_reliability.py))
-and held-out R² with leave-one-relation-out Q²
-([`holdout_predictivity.py`](scripts/regression/holdout_predictivity.py)). They
-still run, and `fig:head-sim-entropy` uses the held-out UASL they established.
+Two scripts are kept here for analyses the final paper does not include: the
+reliability ceiling ([`ulas_reliability.py`](scripts/regression/ulas_reliability.py)),
+and [`curves_across_models.py`](scripts/figures/curves_across_models.py), which
+draws the cross-model decay figure of the submitted version.
 
 ### Checking that it reproduced
 
@@ -125,7 +135,7 @@ $PY scripts/figures/regression_uas_vs_log_distance.py --curves $NPZ \
 
 # fig:ulas-vs-log-distance, the data behind it
 $PY scripts/figures/ulas_vs_log_distance_curves.py --curves $CK16 --checkpoint 16 \
-    --relations $RELS --model-label "BERT-base" \
+    --relations $RELS --model-label "BERT-base" --ncols 5 \
     --out $B/figures/ulas_vs_log_distance_ck16.png
 
 # fig:UASL-only-dendrogram, then fig:dendrogram_relations (four panels over alpha)
@@ -145,10 +155,14 @@ Every script lives under `scripts/`; `experiments/` holds only the manifest, the
 drivers, and saved outputs. There is one copy of each analysis, not two.
 
 **One BERT-base run is bundled**, `results-convB` (peak dev UASL 0.815), and
-every BERT-base number and figure in the paper comes from it. An earlier run
-under a different LayerNorm convention was previously shipped alongside it and
-supplied one figure; that split has been removed, so nothing in the paper mixes
-runs.
+every BERT-base number and figure in the paper comes from it. Its probes read
+the checkpoints of the paper's Appendix "Residual stream checkpoints", i.e. the
+residual stream after each LayerNorm. (The `-convB` suffix names the conversion
+step that produces those checkpoints from the extractor's pre-LayerNorm sums; for
+a post-LayerNorm model the paper's conventions A and B coincide.) An earlier run,
+`results-hface`, was trained on the pre-LayerNorm sums themselves, which the paper
+does not use; it supplied the dendrograms of the submitted version and is no
+longer shipped.
 
 ### 2. Full reproduction from scratch (SLURM + external data)
 
@@ -308,6 +322,37 @@ except the drivers.
 
 ---
 
+## Citation
+
+If you use this code, please cite both the paper and Hewitt & Manning (2019).
+
+<!-- TODO(release): fill in the arXiv identifier and year once the preprint is posted. -->
+
+```bibtex
+@misc{vigneaux2026syntax,
+  title         = {Representation of syntax in {LLM}s through the lens of linear
+                   distance and similarity-aware entropy},
+  author        = {Vigneaux, Juan Pablo and Kennedy, Mary and Iskarous, Khalil
+                   and Frank, Bob and Marcolli, Matilde},
+  year          = {2026},
+  eprint        = {ARXIV-ID},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL}
+}
+
+@inproceedings{hewitt2019structural,
+  title     = {A Structural Probe for Finding Syntax in Word Representations},
+  author    = {Hewitt, John and Manning, Christopher D.},
+  booktitle = {Proceedings of the 2019 Conference of the North American Chapter
+               of the Association for Computational Linguistics: Human Language
+               Technologies},
+  year      = {2019},
+  pages     = {4129--4138}
+}
+```
+
+---
+
 ## Licence and attribution
 
 Released under the **Apache License 2.0**, the licence of the upstream
@@ -320,5 +365,3 @@ listed in [`UPSTREAM_README.md`](UPSTREAM_README.md); the substantive one is
 `structural-probes/data.py`, which gained a model-agnostic pre-aligned embedding
 path that honours each tokenizer's own special-token counts rather than assuming
 BERT's `[CLS]`/`[SEP]`.
-
-If you use this code, please cite both the paper and Hewitt & Manning (2019).

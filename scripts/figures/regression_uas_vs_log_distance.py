@@ -2,10 +2,20 @@
 """
 For each (checkpoint, relation) pair, fit the linear model
 
-    UAS_δ  ~  a  +  b · ln(δ)
+    UAS_δ  ~  a  +  b · ln(δ),   δ = n + 1,
 
 using the raw observed data points (n, UAS_n) with |S_n| >= 5 (the same
-filter applied when building the NPZ).  Reports R², slope b, intercept a,
+filter applied when building the NPZ). The NPZ stores n = the number of words
+strictly between head and dependent (0 for adjacent words); the paper's linear
+distance is δ = n + 1, so the regressor is ln(n + 1). Do not "simplify" this to
+ln(n): it sends every adjacent-word point to -inf and every such fit to NaN.
+
+With --grey-width W, each fit's R² is also bootstrapped parametrically: every
+point's number of correct edges is redrawn from Binomial(|S_n|, UAS_n), the line
+refitted, and the 5th-95th percentile of R² recorded (columns ci_lo, ci_hi,
+ci_width of the CSV). Cells whose interval is wider than W are greyed out in the
+heat map, since their colour cannot tell a good fit from a poor one. The
+paper uses W = 0.5 (the interval covers half the colour scale).  Reports R², slope b, intercept a,
 number of points, p-value for the slope, standard error of the slope, and
 RMSE.
 
@@ -45,6 +55,14 @@ def parse_args():
                         'usual. Use to restrict the figure to the relations the '
                         'text actually discusses; the CSV is unaffected and '
                         'still covers every relation.')
+    p.add_argument('--grey-width', type=float, default=None,
+                   help='Grey out cells whose bootstrap 90%% interval for R^2 is '
+                        'wider than this (paper: 0.5). Default: no bootstrap.')
+    p.add_argument('--n-boot', type=int, default=4000)
+    p.add_argument('--boot-seed', type=int, default=0)
+    p.add_argument('--csv', default=None,
+                   help='Output CSV (default: tables/regression_uas_vs_log_distance.csv '
+                        'beside the curves file)')
     p.add_argument('--out', default=None,
                    help='Output PNG (default: figures/r2_heatmap_uas_vs_log_distance.png)')
     return p.parse_args()
@@ -68,6 +86,7 @@ def main():
                              f'available: {sorted(relations)}')
         keep = set(args.relations)
     n_ck  = len(checkpoints)
+    rng   = np.random.default_rng(args.boot_seed)
     n_rel = len(relations)
 
     # ── Run regressions ───────────────────────────────────────────────────────
@@ -87,8 +106,19 @@ def main():
                 ))
                 continue
 
-            x = np.log(ns)
+            x = np.log(ns + 1)          # δ = n + 1; see the module docstring
             result = stats.linregress(x, uas)
+            r2_ci = (np.nan, np.nan)
+            if args.grey_width is not None:
+                cnt = dict(zip(npz[f'rel_all_ns_{ri}'].tolist(),
+                               npz[f'rel_counts_{ri}'].tolist()))
+                n_e = np.array([cnt[int(v)] for v in ns], dtype=int)
+                Y = rng.binomial(n_e, uas, size=(args.n_boot, len(n_e))) / n_e
+                xc = x - x.mean()
+                Yc = Y - Y.mean(axis=1, keepdims=True)
+                den = (xc @ xc) * (Yc ** 2).sum(axis=1)
+                r2b = np.where(den > 0, (Yc @ xc) ** 2 / np.where(den > 0, den, 1), np.nan)
+                r2_ci = tuple(np.nanpercentile(r2b, [5, 95]))
 
             fitted = result.slope * x + result.intercept
             rmse   = float(np.sqrt(np.mean((uas - fitted) ** 2)))
@@ -103,12 +133,15 @@ def main():
                 p_value     = float(result.pvalue),
                 slope_se    = round(float(result.stderr),    4),
                 rmse        = round(rmse,                    4),
+                ci_lo       = round(float(r2_ci[0]), 4),
+                ci_hi       = round(float(r2_ci[1]), 4),
+                ci_width    = round(float(r2_ci[1] - r2_ci[0]), 4),
             ))
 
     df = pd.DataFrame(records)
 
     # ── CSV ───────────────────────────────────────────────────────────────────
-    csv_path = script_dir / 'tables' / 'regression_uas_vs_log_distance.csv'
+    csv_path = Path(args.csv) if args.csv else script_dir / 'tables' / 'regression_uas_vs_log_distance.csv'
     df.to_csv(csv_path, index=False)
     print(f'CSV  → {csv_path}')
 
@@ -205,17 +238,31 @@ document.querySelectorAll('.tbl th').forEach((th, ci) => {{
     ax.set_yticklabels(r2_wide.index.tolist(), fontsize=7)
     ax.set_xlabel('Residual stream checkpoint', fontsize=10)
     ax.set_ylabel('Relation', fontsize=10)
-    ax.set_title(r'$R^2$: mean UASL ~ $a + b\,\ln \delta$', fontsize=10)
+    ax.set_title(r'$R^2$ of $\mathrm{UASL}_\delta \sim a + b\,\ln \delta$', fontsize=10)
 
-    # Annotate cells with R² value
+    width_wide = (df.pivot(index='relation', columns='checkpoint', values='ci_width')
+                  .reindex(index=r2_wide.index, columns=r2_wide.columns))
+    n_grey = 0
+    # Annotate cells with R² value; grey out those the data do not determine
     for ri in range(len(r2_wide)):
         for ci in range(len(r2_wide.columns)):
             v = r2_wide.values[ri, ci]
             if np.isnan(v):
                 continue
+            w = width_wide.values[ri, ci]
+            if args.grey_width is not None and w > args.grey_width:
+                n_grey += 1
+                ax.add_patch(plt.Rectangle((ci - 0.5, ri - 0.5), 1, 1,
+                                           facecolor='#d4d4d4', edgecolor='white', lw=0.5))
+                ax.text(ci, ri, f'{v:.2f}', ha='center', va='center',
+                        fontsize=7, color='#7a7a7a', style='italic')
+                continue
             color = 'black' if 0.2 < v < 0.85 else 'white'
             ax.text(ci, ri, f'{v:.2f}', ha='center', va='center',
                     fontsize=7, color=color)
+    if args.grey_width is not None:
+        print(f'greyed {n_grey} of {int(np.isfinite(r2_wide.values.astype(float)).sum())} drawn cells '
+              f'(90% bootstrap interval wider than {args.grey_width})')
 
     cbar = plt.colorbar(im, ax=ax, fraction=0.02, pad=0.02, shrink=0.9)
     cbar.set_label('$R^2$', fontsize=10)

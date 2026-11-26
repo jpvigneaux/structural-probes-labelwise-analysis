@@ -129,7 +129,7 @@ def main():
         if not c.ok(align_path.exists(), f'alignments present', str(align_path)):
             continue
 
-        conllx = corpus / f'ptb3-wsj-{split}.conllx'
+        conllx = corpus / f'{run.get("corpus_stem", "ptb3-wsj")}-{split}.conllx'
         sentences = read_conllx_sentences(conllx) if conllx.exists() else None
         if sentences is None:
             print(f'    [--] {conllx} not found; skipping word-count check')

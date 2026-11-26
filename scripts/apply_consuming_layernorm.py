@@ -1,12 +1,19 @@
 '''Derive "convention B" checkpoints from "convention A" checkpoints.
 
 Two conventions appear in the literature for what "the representation at layer l"
-means. They coincide for post-LayerNorm encoders (BERT, RoBERTa, DeBERTa) and
-diverge for pre-LayerNorm models (GPT-2, ModernBERT, GPT-J):
+means; the paper calls them A and B (Appendix "Another look at layer
+normalization", label app:convention). They coincide for post-LayerNorm encoders
+(BERT, RoBERTa, DeBERTa) and diverge for pre-LayerNorm models (GPT-2, ModernBERT,
+GPT-J):
 
-  A  "what propagates"       the raw residual stream, unnormalized.
-                             Elhage et al. (2021), Ferrando et al. (2024) Eq. 5,
-                             TransformerLens `resid_mid`/`resid_post`.
+  A  "what propagates"       the residual stream as the architecture maintains it,
+                             i.e. the checkpoints defined in the paper's Appendix
+                             "Residual stream checkpoints" (app:checkpoints).
+                             For a pre-LN model this is the raw, unnormalized
+                             stream: Elhage et al. (2021), Ferrando et al. (2024)
+                             Eq. 5, TransformerLens `resid_mid`/`resid_post` on
+                             HookedTransformer. For a post-LN encoder it is the
+                             post-LayerNorm value.
 
   B  "what the next sub-layer reads"
                              the residual stream after the LayerNorm that its
@@ -15,7 +22,11 @@ diverge for pre-LayerNorm models (GPT-2, ModernBERT, GPT-J):
 
 In a post-LN block, `x_mid = LN1(attn + x)` is handed straight to the feed-forward
 and `x_out = LN2(ffn + x_mid)` straight to the next block's attention, so A == B
-exactly. In a pre-LN block nothing normalizes the stream itself, so A and B differ
+exactly. Our post-LN extractors nevertheless store a third quantity, the sum
+entering each LayerNorm (`attn + x`, `ffn + x_mid`; TransformerLens's
+`resid_mid`/`resid_post` on HookedEncoder are these sums), which is neither A nor
+B; this script normalizes it to the paper's representation. In a pre-LN block
+nothing normalizes the stream itself, so A and B differ
 by the consumer's LayerNorm -- and each checkpoint has exactly one consumer, which
 makes B unambiguous:
 
@@ -48,11 +59,13 @@ import torch
 from transformers import AutoTokenizer, AutoModel
 
 from data import natural_sentence
+from language_profiles import LANGUAGES, join_cjk
 
 # model_type -> (attribute path to the block list, has_midblock).
-# Only pre-LayerNorm models need this transform; post-LN models are rejected
-# because A and B already agree and silently producing a "B" file for them would
-# invite double-normalization.
+# These are the pre-LayerNorm models, for which A and B differ. Post-LN encoders
+# are listed separately in POST_LN_BLOCKS below: for them A and B agree, and the
+# transform only normalizes the stored pre-LayerNorm sums (applying it to files
+# that already hold post-LN values would normalize them twice).
 #
 #   gpt2  serial blocks, 2+2L layout, separate ln_1 (attn) and ln_2 (mlp)
 #   gptj  PARALLEL residual: h_out = h + attn(ln_1(h)) + mlp(ln_1(h)).
@@ -178,7 +191,8 @@ def consumer_norms(model, mtype, n_layers):
     return norms
 
 
-def validate(model, tokenizer, mtype, n_layers, norms, sentences, device, tol=2e-5):
+def validate(model, tokenizer, mtype, n_layers, norms, sentences, device, tol=2e-5,
+             text=natural_sentence):
     '''Check the transform against what the sub-layers actually receive.
 
     Rather than trusting a reading of the block's forward(), this pre-hooks the
@@ -203,7 +217,7 @@ def validate(model, tokenizer, mtype, n_layers, norms, sentences, device, tol=2e
         handles.append(blk.register_forward_hook(
             lambda m, i, out, k=k: post.__setitem__(k, first_tensor(out).detach().clone())))
         if post_ln:
-            # A = the accumulator entering each LayerNorm; true B = what the next
+            # stored = the sum entering each LayerNorm; true B = what the next
             # sub-layer is handed: the feed-forward for the mid checkpoint, the
             # next block for the post checkpoint (that is just the block output).
             handles.append(register_input_hook(blk.attention.output.LayerNorm, mid, k))
@@ -234,7 +248,7 @@ def validate(model, tokenizer, mtype, n_layers, norms, sentences, device, tol=2e
     try:
         for tokens in sentences:
             mid.clear(); post.clear(); blk_in.clear(); true_b.clear()
-            enc = tokenizer(natural_sentence(tokens), return_tensors='pt').to(device)
+            enc = tokenizer(text(tokens), return_tensors='pt').to(device)
             with torch.no_grad():
                 model(**enc)
             a, tb = {}, {i: v[0] for i, v in true_b.items()}
@@ -337,6 +351,10 @@ def main():
     argp.add_argument('--norms', default=None,
                       help='transform using parameters from --dump-norms, without '
                            'loading the model (skips validation)')
+    argp.add_argument('--language', default='english', choices=LANGUAGES,
+                      help="how gold tokens become the model's text: 'english' "
+                           "(data.natural_sentence, the default) or 'chinese' "
+                           "(language_profiles.join_cjk)")
     args = argp.parse_args()
 
     if args.norms:
@@ -373,7 +391,8 @@ def main():
             # Validate in the model's own dtype: the check applies the very same
             # LayerNorm module to the very same captured tensor, so it is exact
             # even in fp16 -- and avoids materialising a 6B model in fp32.
-            validate(model, tokenizer, mtype, n_layers, norms, sents, 'cpu')
+            validate(model, tokenizer, mtype, n_layers, norms, sents, 'cpu',
+                     text=join_cjk if args.language == 'chinese' else natural_sentence)
         else:
             print('WARNING: no --conllx given, skipping validation')
 

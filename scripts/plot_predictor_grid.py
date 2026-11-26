@@ -53,7 +53,7 @@ FIT = '#eb6834'
 PREDICTORS = [
     ('mean_log_length', r'mean $\log$ linear distance'),
     ('sd_log_length', r'sd $\log$ linear distance'),
-    ('head_sim_entropy', 'head sim-entropy (bits)'),
+    ('head_sim_entropy', r'$H^{\rm sim}_{\rm head}$ (bits)'),
 ]
 
 
@@ -171,7 +171,7 @@ def refit_column(args):
 
 
 def ylabel_for(args):
-    stem = 'test UASL' if args.ulas == 'test' else 'UASL'
+    stem = 'held-out UASL' if args.ulas == 'test' else 'UASL'
     return stem if args.marginal else f'{stem}, residual'
 
 
@@ -226,13 +226,29 @@ def draw_panel(label, df, key, xlabel, args):
         order = np.argsort(area_w)[::-1][:args.annotate]
         rels = df.index.to_numpy()
         flip = xlim[0] + 0.78 * (xlim[1] - xlim[0])   # label leftwards near the right edge
+        anns = []
         for i in order:
             off = np.sqrt(sizes[i]) / 2 + 1.5
             left = x[i] > flip
-            ax.annotate(rels[i], (x[i], y[i]), textcoords='offset points',
-                        xytext=(-off if left else off, off * 0.5),
-                        ha='right' if left else 'left',
-                        fontsize=args.annotate_font, color=INK_2, zorder=5)
+            anns.append(ax.annotate(rels[i], (x[i], y[i]), textcoords='offset points',
+                                    xytext=(-off if left else off, off * 0.5),
+                                    ha='right' if left else 'left',
+                                    fontsize=args.annotate_font, color=INK_2, zorder=5))
+        # Move a label that overlaps one already placed: alternately up and down in
+        # steps of one line height, until it is clear (heaviest relations stay put).
+        fig.canvas.draw()
+        renderer = fig.canvas.get_renderer()
+        placed = []
+        for ann in anns:
+            x0, y0 = ann.xyann
+            step = args.annotate_font * 1.15
+            for k in range(1, 12):
+                box = ann.get_window_extent(renderer).expanded(1.02, 1.05)
+                if not any(box.overlaps(p) for p in placed):
+                    break
+                shift = step * ((k + 1) // 2) * (1 if k % 2 else -1)
+                ann.xyann = (x0, y0 + shift)
+            placed.append(ann.get_window_extent(renderer))
 
     ax.text(0.97, 0.94, rf'$\beta={slope:+.3f}$', transform=ax.transAxes,
             ha='right', va='top', fontsize=8, color=INK)

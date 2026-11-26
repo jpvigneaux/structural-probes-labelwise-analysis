@@ -58,7 +58,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.ticker
-from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
+from scipy.cluster.hierarchy import linkage, dendrogram, fcluster, set_link_color_palette
 from scipy.spatial.distance import squareform
 
 
@@ -189,7 +189,9 @@ def draw_dendrogram(ax, Z, labels, title, alpha_val, fonts=None):
     ))
     ax.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
     ax.axvline(color_thresh, color='gray', linewidth=0.9, linestyle='--')
-    ax.set_xlabel('Avg composite distance (symlog)', fontsize=label_fs)
+    which = (r'$\tilde d_{\rm UASL}$' if alpha_val == 1.0 else
+             r'$\tilde d_{\rm range}$' if alpha_val == 0.0 else 'composite distance')
+    ax.set_xlabel(f'{which}, average linkage (symlog)', fontsize=label_fs)
     ax.tick_params(axis='x', labelsize=tick_fs)
     ax.spines[['top', 'right', 'left']].set_visible(False)
     if title:
@@ -226,6 +228,10 @@ def parse_args():
                    help='Figure size in inches, overriding the default '
                         '(4.5,11 single-panel; 10,14 four-panel). Use a shorter '
                         'height to fit several panels on one page.')
+    p.add_argument('--link-colors', default=None,
+                   help='Comma-separated matplotlib colours for the clusters below the cut, '
+                        'in the order scipy assigns them (bottom leaf first). Lets a '
+                        'regenerated figure keep the colours the text refers to.')
     p.add_argument('--no-title', action='store_true',
                    help='Suppress the suptitle and per-axes title. Intended for '
                         'multi-panel LaTeX figures, where repeating an identical '
@@ -245,6 +251,8 @@ def parse_args():
 
 def main():
     args      = parse_args()
+    if args.link_colors:
+        set_link_color_palette(args.link_colors.split(','))
     npz       = np.load(args.curves, allow_pickle=False)
     relations = npz['rel_names'].astype(str).tolist()
     n_rel     = len(relations)
@@ -322,7 +330,7 @@ def main():
         Z = linkage(squareform(dist_comp), method='average')
         title = '' if args.no_title else (
             f'α = {alpha:.2f}  '
-            f'({"UAS only" if alpha == 1.0 else "range only" if alpha == 0.0 else f"UAS {alpha:.0%} / range {1-alpha:.0%}"})')
+            f'({"UASL only" if alpha == 1.0 else "range only" if alpha == 0.0 else f"UASL {alpha:.0%} / range {1-alpha:.0%}"})')
         draw_dendrogram(ax, Z, relations, title, alpha, fonts)
 
         # Print flat clusters

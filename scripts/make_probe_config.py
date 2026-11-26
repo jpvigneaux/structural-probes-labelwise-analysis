@@ -71,6 +71,13 @@ def main():
     for split in ('train', 'dev', 'test'):
         cfg['dataset']['embeddings'][f'{split}_path'] = \
             f'raw.{split}.{ex["stem"]}.hdf5'
+    # A run on another treebank names its corpus files and language; the English
+    # runs name neither and keep the base config's ptb3-wsj files and defaults.
+    if 'corpus_stem' in run:
+        for split in ('train', 'dev', 'test'):
+            cfg['dataset']['corpus'][f'{split}_path'] = f'{run["corpus_stem"]}-{split}.conllx'
+    if 'language' in run:
+        cfg['dataset']['language'] = run['language']
 
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     with open(args.out, 'w') as f:
